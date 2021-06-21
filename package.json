@@ -1,0 +1,20 @@
+{
+  "name": "@area17/a17-behaviors",
+  "version": "0.0.1",
+  "description": "JavaScript framework to attach JavaScript events and interactions to DOM Nodes",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/area17/a17-behaviors"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "A17 <dev@area17.com> (https://area17.com/)",
+  "license": "MIT",
+  "dependencies": {
+    "@area17/a17-helpers": "^2.1.3"
+  }
+}
