@@ -258,7 +258,7 @@ The third parameter is an object that contains the behavior `lifecycle` methods:
 
 ### Lifecycle methods
 
-[manageBehaviors](js-functions-manageBehaviors) in A17 Boilerplate will run the lifecycle method `init` when the node is in the DOM.
+`manageBehaviors` will run the lifecycle method `init` when the node is in the DOM.
 
 If there is a media query for running specified and the current media query qualifies the function to run, or if there is no media query for running set - then after `init` the `enabled` function runs. `enabled` is optional, if you don't need media query switching then you don't need to include this method.
 
