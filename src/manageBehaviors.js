@@ -1,5 +1,5 @@
 import createBehavior from './createBehavior';
-import isBreakpoint from '@area17/a17-helpers';
+import { isBreakpoint, resized } from '@area17/a17-helpers';
 
 let options = {
   dataAttr: 'behavior',
@@ -463,6 +463,9 @@ function init(loadedBehaviorsModule, opts) {
   options = {
     ...options, ...opts
   }
+
+  // on resize, check
+  resized();
 
   // set up intersection observer
   io = new IntersectionObserver(intersection, options.intersectionOptions);
