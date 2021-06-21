@@ -151,7 +151,6 @@ We *could* use `window.matchMedia` for this instead, but, it would mean sharing 
 
 ```JavaScript
 import manageBehaviors from '@area17/a17-behaviors';
-import resized from '@area17/a17-helpers';
 import * as Behaviors from './behaviors';
 
 window.A17 = window.A17 || {};

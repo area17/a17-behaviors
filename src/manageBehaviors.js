@@ -1,5 +1,5 @@
-import createBehavior from './createBehavior';
 import { isBreakpoint, resized } from '@area17/a17-helpers';
+import createBehavior from './createBehavior';
 
 let options = {
   dataAttr: 'behavior',
