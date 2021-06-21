@@ -150,7 +150,7 @@ We *could* use `window.matchMedia` for this instead, but, it would mean sharing 
 ## `src/application.js`
 
 ```JavaScript
-import manageBehaviors from '@area17/a17-behaviors';
+import { manageBehaviors } from '@area17/a17-behaviors';
 import * as Behaviors from './behaviors';
 
 window.A17 = window.A17 || {};
@@ -208,7 +208,7 @@ The basic structure of your behaviors are as follows:
 If the behavior module is not already loaded, then then an attempt to `import` the module will be made and then the behavior will have its `init` run.
 
 ```JavaScript
-import createBehavior from '@area17/a17-behaviors';
+import { createBehavior } from '@area17/a17-behaviors';
 
 const MyBehavior = createBehavior(
   'MyBehavior',
@@ -271,7 +271,7 @@ And `destroy` is the antithesis of `init` - this runs when the node is removed f
 `intersectionIn` and `intersectionOut` run when the element comes in and out of the viewport, with a background `IntersectionObserver`. Access to the `IntersectionObserver` options is via a named option:
 
 ```JavaScript
-import createBehavior from '@area17/a17-behaviors';
+import { createBehavior } from '@area17/a17-behaviors';
 
 const MyBehavior = createBehavior(
   'MyBehavior',
@@ -303,7 +303,7 @@ const MyBehavior = createBehavior(
 ```
 
 ```JavaScript
-import createBehavior from '@area17/a17-behaviors';
+import { createBehavior } from '@area17/a17-behaviors';
 
 const MyBehavior = createBehavior(
   'MyBehavior',
@@ -361,7 +361,7 @@ Methods and variables you can use with `lifecycle` functions and `behavior metho
 ```
 
 ```JavaScript
-import createBehavior from '@area17/a17-behaviors';
+import { createBehavior } from '@area17/a17-behaviors';
 import sub1 from './sub1.js';
 import sub3 from './sub3.js';
 
@@ -430,7 +430,7 @@ To alter a behavior at a breakpoint, in this example large and larger breakpoint
 ```
 
 ```JavaScript
-import createBehavior from '@area17/a17-behaviors';
+import { createBehavior } from '@area17/a17-behaviors';
 
 const MyBehavior = createBehavior(
   'MyBehavior',
