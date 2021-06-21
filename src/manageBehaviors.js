@@ -1,4 +1,6 @@
-import { isBreakpoint, resized } from '@area17/a17-helpers';
+//import { isBreakpoint, resized } from '@area17/a17-helpers';
+import resized from '@area17/a17-helpers/src/utility/resized';
+import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
 import createBehavior from './createBehavior';
 
 let options = {
