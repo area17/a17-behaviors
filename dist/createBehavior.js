@@ -1,5 +1,9 @@
+// don't edit this file
+
 import { isBreakpoint, purgeProperties } from '@area17/a17-helpers';
 import manageBehaviors from './manageBehaviors';
+
+// see https://code.area17.com/a17/fe-boilerplate/wikis/js-functions-createBehavior
 
 function Behavior(node, config = {}) {
   if (!node || !(node instanceof Element)) {

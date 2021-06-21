@@ -1,11 +1,11 @@
 const fs = require('fs');
 
-fs.copyFile('src/manageBehaviors.js', 'dist/manageBehaviors.js', (err) => {
-  if (err) throw err;
-  console.log('manageBehaviors.js was copied');
-});
-
-fs.copyFile('src/createBehavior.js', 'dist/createBehavior.js', (err) => {
-  if (err) throw err;
-  console.log('createBehavior.js was copied');
-});
+try {
+  const manageBehaviors = fs.readFileSync('src/manageBehaviors.js', 'utf8');
+  const createBehavior = fs.readFileSync('src/createBehavior.js', 'utf8');
+  fs.writeFileSync('dist/manageBehaviors.js', '// don\'t edit this file' + '\n\n' + manageBehaviors);
+  fs.writeFileSync('dist/createBehavior.js', '// don\'t edit this file' + '\n\n' + createBehavior);
+  console.log('✅');
+} catch (err) {
+  console.error(err);
+}
