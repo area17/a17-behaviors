@@ -34,7 +34,6 @@ function Behavior(node, config = {}) {
 
   this.__isIntersecting = false;
   this.__intersectionObserver;
-  this.__intersections();
 
   return this;
 }
@@ -107,6 +106,8 @@ Behavior.prototype = Object.freeze({
     } else {
       this.enable();
     }
+
+    this.__intersections();
   },
   destroy() {
     if (this.__isEnabled === true) {
