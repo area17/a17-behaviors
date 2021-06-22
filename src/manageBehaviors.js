@@ -492,7 +492,7 @@ let exportObj = {
 if (process.env.MODE && process.env.MODE === 'development') {
   exportObj = {
     ...exportObj,
-    loaded: loadedBehaviorNames,
+    loaded: loadedBehaviors,
     active: activeBehaviors,
     getBehaviors: nodeBehaviors,
     getProps: behaviorProperties,
