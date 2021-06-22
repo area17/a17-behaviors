@@ -486,13 +486,13 @@ function init(loadedBehaviorsModule, opts) {
 let exportObj = {
   init: init,
   add: addBehaviors,
-  initBehavior: initBehavior
+  initBehavior: initBehavior,
 }
 
 if (process.env.MODE && process.env.MODE === 'development') {
   exportObj = {
     ...exportObj,
-    initBehavior: initBehavior,
+    loaded: loadedBehaviorNames,
     active: activeBehaviors,
     getBehaviors: nodeBehaviors,
     getProps: behaviorProperties,
