@@ -1,6 +1,6 @@
-//import { isBreakpoint, purgeProperties } from '@area17/a17-helpers';
 import purgeProperties from '@area17/a17-helpers/src/utility/purgeProperties';
-import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
+//import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
+import isBreakpoint from './isBreakpoint';
 import manageBehaviors from './manageBehaviors';
 
 function Behavior(node, config = {}) {
@@ -17,6 +17,7 @@ function Behavior(node, config = {}) {
 
   this.__isEnabled = false;
   this.__children = config.children;
+  this.__breakpoints = config.breakpoints;
 
   // Auto-bind all custom methods to "this"
   this.customMethodNames.forEach(methodName => {
@@ -172,25 +173,28 @@ Behavior.prototype = Object.freeze({
       mb.initBehavior(SubBehavior.prototype.behaviorName, node, config);
     }
   },
+  isBreakpoint(bp) {
+    return isBreakpoint(bp, this.__breakpoints);
+  },
   __toggleEnabled() {
-    const isValidMQ = isBreakpoint(this.options.media);
+    const isValidMQ = isBreakpoint(this.options.media, this.__breakpoints);
     if (isValidMQ && !this.__isEnabled) {
       this.enable();
     } else if (!isValidMQ && this.__isEnabled) {
       this.disable();
     }
   },
-  __mediaQueryUpdated() {
+  __mediaQueryUpdated(e) {
     if (this.lifecycle.mediaQueryUpdated != null) {
-      this.lifecycle.mediaQueryUpdated.call(this);
+      this.lifecycle.mediaQueryUpdated.call(this, e);
     }
     if (this.options.media) {
       this.__toggleEnabled();
     }
   },
-  __resized() {
+  __resized(e) {
     if (this.lifecycle.resized != null) {
-      this.lifecycle.resized.call(this);
+      this.lifecycle.resized.call(this, e);
     }
   },
   __intersections() {

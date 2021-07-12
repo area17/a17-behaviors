@@ -1,6 +1,7 @@
-//import { isBreakpoint, resized } from '@area17/a17-helpers';
 import resized from '@area17/a17-helpers/src/utility/resized';
-import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
+import getCurrentMediaQuery from '@area17/a17-helpers/src/utility/getCurrentMediaQuery';
+//import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
+import isBreakpoint from './isBreakpoint';
 import createBehavior from './createBehavior';
 
 let options = {
@@ -8,7 +9,8 @@ let options = {
   lazyAttr: 'behavior-lazy',
   intersectionOptions: {
     rootMargin: '20%',
-  }
+  },
+  breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl']
 };
 let loadedBehaviorNames = [];
 let observingBehaviors = false;
@@ -254,7 +256,7 @@ function loopLazyBehaviorNodes(bNodes) {
     lazyBNames.forEach((bMedia, bName) => {
       // if no lazy behavior breakpoint trigger,
       // or if the current breakpoint matches
-      if (!bMedia || isBreakpoint(bMedia)) {
+      if (!bMedia || isBreakpoint(bMedia, options.breakpoints)) {
         // run behavior on node
         initBehavior(bName, bNode);
         // remove this behavior from the list of lazy behaviors
@@ -328,6 +330,11 @@ function initBehavior(bName, bNode, config = {}) {
     importBehavior(bName, bNode);
     return;
   }
+  // merge breakpoints into config
+  config = {
+    breakpoints: options.breakpoints,
+    ...config
+  };
   // now check that this behavior isn't already
   // running on this node
   const nodeBehaviors = activeBehaviors.get(bNode) || {};
@@ -487,19 +494,25 @@ let exportObj = {
   init: init,
   add: addBehaviors,
   initBehavior: initBehavior,
-}
-
-if (process.env.MODE && process.env.MODE === 'development') {
-  exportObj = {
-    ...exportObj,
-    loaded: loadedBehaviors,
-    active: activeBehaviors,
-    getBehaviors: nodeBehaviors,
-    getProps: behaviorProperties,
-    getProp: behaviorProp,
-    setProp: behaviorProp,
-    callMethod: behaviorProp
+  get currentBreakpoint() {
+    return getCurrentMediaQuery();
   }
 }
 
+if (process.env.MODE && process.env.MODE === 'development') {
+  Object.defineProperty(exportObj, 'loaded', {
+    get: () => {
+      return loadedBehaviorNames;
+    }
+  });
+  exportObj.activeBehaviors = activeBehaviors;
+  exportObj.active = activeBehaviors;
+  exportObj.getBehaviors = nodeBehaviors;
+  exportObj.getProps = behaviorProperties;
+  exportObj.getProp = behaviorProp;
+  exportObj.setProp = behaviorProp;
+  exportObj.callMethod = behaviorProp;
+}
+
 export default exportObj;
+
