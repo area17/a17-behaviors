@@ -16,6 +16,7 @@ let loadedBehaviorNames = [];
 let observingBehaviors = false;
 const loadedBehaviors = {};
 const activeBehaviors = new Map();
+const behaviorsAwaitingImport = new Map();
 let io;
 const ioEntries = new Map(); // need to keep a separate map of intersection observer entries as `io.takeRecords()` always returns an empty array, seems broken in all browsers 🤷🏻‍♂️
 const intersecting = new Map();
@@ -122,7 +123,13 @@ function destroyBehaviors(bNode) {
 */
 function importBehavior(bName, bNode) {
   // first check we haven't already got this behavior module
-  if (loadedBehaviorNames.indexOf(bName) > -1 ) {
+  if (loadedBehaviorNames.indexOf(bName) > -1) {
+    // if no, store a list of nodes awaiting this behavior to load
+    const awaitingImport = behaviorsAwaitingImport.get(bName) || [];
+    if (!awaitingImport.includes(bNode)) {
+      awaitingImport.push(bNode);
+    }
+    behaviorsAwaitingImport.set(bName, awaitingImport);
     return;
   }
   // push to our store of loaded behaviors
@@ -136,6 +143,11 @@ function importBehavior(bName, bNode) {
       // import complete, go go go
       loadedBehaviors[bName] = module.default;
       initBehavior(bName, bNode);
+      // check for other instances of this behavior that where awaiting load
+      behaviorsAwaitingImport.get(bName).forEach(node => {
+        initBehavior(bName, node);
+      });
+      behaviorsAwaitingImport.delete(bName)
     } else {
       console.warn(`Tried to import ${bName}, but it seems to not be a behavior`);
       // fail, clean up

@@ -48,62 +48,78 @@ var resized = function() {
   }
 };
 
-var isBreakpoint = function(bp) {
+const isBreakpoint = function (breakpoint, breakpoints) {
   // Doc: https://code.area17.com/a17/a17-helpers/wikis/isBreakpoint
 
   // bail if no breakpoint is passed
-  if (!bp) {
+  if (!breakpoint) {
     console.error('You need to pass a breakpoint name!');
-    return false;
+    return false
   }
 
   // we only want to look for a specific modifier and make sure it is at the end of the string
-  let pattern = new RegExp('\\+$|\\-$');
+  const pattern = /\+$|\-$/;
+  const regExp = new RegExp(pattern);
 
   // bps must be in order from smallest to largest
-  let bps = ['xs', 'md', 'lg', 'xl', 'xxl'];
+  let bps = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
 
   // override the breakpoints if the option is set on the global A17 object
-  if( window.A17 && window.A17.breakpoints ){
-    if( Array.isArray(window.A17.breakpoints) ){
+  if (window.A17 && window.A17.breakpoints) {
+    if (Array.isArray(window.A17.breakpoints)) {
       bps = window.A17.breakpoints;
-    }else {
+    } else {
       console.warn('A17.breakpoints should be an array. Using defaults.');
     }
   }
 
+  // override the breakpoints if a set of breakpoints is passed through as a parameter (added for A17-behaviors to allow usage with no globals)
+  if (breakpoints) {
+    if (Array.isArray(breakpoints)) {
+      bps = breakpoints;
+    } else {
+      console.warn('isBreakpoint breakpoints should be an array. Using defaults.');
+    }
+  }
+
   // store current breakpoint in use
-  let currentBp = getCurrentMediaQuery();
+  const currentBp = getCurrentMediaQuery();
 
   // store the index of the current breakpoint
-  let currentBpIndex = bps.indexOf(currentBp);
+  const currentBpIndex = bps.indexOf(currentBp);
 
   // check to see if bp has a + or - modifier
-  let hasModifier = pattern.exec(bp);
+  const hasModifier = regExp.exec(breakpoint);
 
   // store modifier value
-  let modifier = hasModifier ? hasModifier[0] : false;
+  const modifier = hasModifier ? hasModifier[0] : false;
 
   // store the trimmed breakpoint name if a modifier exists, if not, store the full queried breakpoint name
-  let bpName = hasModifier ? bp.slice(0, -1) : bp;
+  const bpName = hasModifier ? breakpoint.slice(0, -1) : breakpoint;
 
   // store the index of the queried breakpoint
-  let bpIndex = bps.indexOf(bpName);
+  const bpIndex = bps.indexOf(bpName);
 
   // let people know if the breakpoint name is unrecognized
   if (bpIndex < 0) {
-    console.warn('Unrecognized breakpoint. Supported breakpoints are: '+ bps.join(', '));
-    return false;
+    console.warn(
+      'Unrecognized breakpoint. Supported breakpoints are: ' + bps.join(', ')
+    );
+    return false
   }
 
   // compare the modifier with the index of the current breakpoint in the bps array with the index of the queried breakpoint.
   // if no modifier is set, compare the queried breakpoint name with the current breakpoint name
-  if ((modifier === '+' && currentBpIndex >= bpIndex) || (modifier === '-' && currentBpIndex <= bpIndex) || (!modifier && bp === currentBp)) {
-    return true;
+  if (
+    (modifier === '+' && currentBpIndex >= bpIndex) ||
+    (modifier === '-' && currentBpIndex <= bpIndex) ||
+    (!modifier && breakpoint === currentBp)
+  ) {
+    return true
   }
 
   // the current breakpoint isn’t the one you’re looking for
-  return false;
+  return false
 };
 
 var purgeProperties = function(obj) {
@@ -116,8 +132,6 @@ var purgeProperties = function(obj) {
 
   // alternatives considered: https://jsperf.com/deleting-properties-from-an-object
 };
-
-//import { isBreakpoint, purgeProperties } from '@area17/a17-helpers';
 
 function Behavior(node, config = {}) {
   if (!node || !(node instanceof Element)) {
@@ -133,6 +147,7 @@ function Behavior(node, config = {}) {
 
   this.__isEnabled = false;
   this.__children = config.children;
+  this.__breakpoints = config.breakpoints;
 
   // Auto-bind all custom methods to "this"
   this.customMethodNames.forEach(methodName => {
@@ -280,7 +295,7 @@ Behavior.prototype = Object.freeze({
     }
   },
   addSubBehavior(SubBehavior, node = this.$node, config = {}) {
-    const mb = manageBehaviors;
+    const mb = exportObj;
     if (typeof SubBehavior === 'string') {
       mb.initBehavior(SubBehavior, node, config);
     } else {
@@ -288,25 +303,28 @@ Behavior.prototype = Object.freeze({
       mb.initBehavior(SubBehavior.prototype.behaviorName, node, config);
     }
   },
+  isBreakpoint(bp) {
+    return isBreakpoint(bp, this.__breakpoints);
+  },
   __toggleEnabled() {
-    const isValidMQ = isBreakpoint(this.options.media);
+    const isValidMQ = isBreakpoint(this.options.media, this.__breakpoints);
     if (isValidMQ && !this.__isEnabled) {
       this.enable();
     } else if (!isValidMQ && this.__isEnabled) {
       this.disable();
     }
   },
-  __mediaQueryUpdated() {
+  __mediaQueryUpdated(e) {
     if (this.lifecycle.mediaQueryUpdated != null) {
-      this.lifecycle.mediaQueryUpdated.call(this);
+      this.lifecycle.mediaQueryUpdated.call(this, e);
     }
     if (this.options.media) {
       this.__toggleEnabled();
     }
   },
-  __resized() {
+  __resized(e) {
     if (this.lifecycle.resized != null) {
-      this.lifecycle.resized.call(this);
+      this.lifecycle.resized.call(this, e);
     }
   },
   __intersections() {
@@ -372,19 +390,19 @@ const createBehavior = (name, def, lifecycle = {}) => {
   return fn;
 };
 
-//import { isBreakpoint, resized } from '@area17/a17-helpers';
-
 let options = {
   dataAttr: 'behavior',
   lazyAttr: 'behavior-lazy',
   intersectionOptions: {
     rootMargin: '20%',
-  }
+  },
+  breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl']
 };
 let loadedBehaviorNames = [];
 let observingBehaviors = false;
 const loadedBehaviors = {};
 const activeBehaviors = new Map();
+const behaviorsAwaitingImport = new Map();
 let io;
 const ioEntries = new Map(); // need to keep a separate map of intersection observer entries as `io.takeRecords()` always returns an empty array, seems broken in all browsers 🤷🏻‍♂️
 const intersecting = new Map();
@@ -491,7 +509,13 @@ function destroyBehaviors(bNode) {
 */
 function importBehavior(bName, bNode) {
   // first check we haven't already got this behavior module
-  if (loadedBehaviorNames.indexOf(bName) > -1 ) {
+  if (loadedBehaviorNames.indexOf(bName) > -1) {
+    // if no, store a list of nodes awaiting this behavior to load
+    const awaitingImport = behaviorsAwaitingImport.get(bName) || [];
+    if (!awaitingImport.includes(bNode)) {
+      awaitingImport.push(bNode);
+    }
+    behaviorsAwaitingImport.set(bName, awaitingImport);
     return;
   }
   // push to our store of loaded behaviors
@@ -505,6 +529,11 @@ function importBehavior(bName, bNode) {
       // import complete, go go go
       loadedBehaviors[bName] = module.default;
       initBehavior(bName, bNode);
+      // check for other instances of this behavior that where awaiting load
+      behaviorsAwaitingImport.get(bName).forEach(node => {
+        initBehavior(bName, node);
+      });
+      behaviorsAwaitingImport.delete(bName);
     } else {
       console.warn(`Tried to import ${bName}, but it seems to not be a behavior`);
       // fail, clean up
@@ -625,7 +654,7 @@ function loopLazyBehaviorNodes(bNodes) {
     lazyBNames.forEach((bMedia, bName) => {
       // if no lazy behavior breakpoint trigger,
       // or if the current breakpoint matches
-      if (!bMedia || isBreakpoint(bMedia)) {
+      if (!bMedia || isBreakpoint(bMedia, options.breakpoints)) {
         // run behavior on node
         initBehavior(bName, bNode);
         // remove this behavior from the list of lazy behaviors
@@ -699,6 +728,11 @@ function initBehavior(bName, bNode, config = {}) {
     importBehavior(bName, bNode);
     return;
   }
+  // merge breakpoints into config
+  config = {
+    breakpoints: options.breakpoints,
+    ...config
+  };
   // now check that this behavior isn't already
   // running on this node
   const nodeBehaviors = activeBehaviors.get(bNode) || {};
@@ -857,23 +891,26 @@ function init(loadedBehaviorsModule, opts) {
 let exportObj = {
   init: init,
   add: addBehaviors,
-  initBehavior: initBehavior
+  initBehavior: initBehavior,
+  get currentBreakpoint() {
+    return getCurrentMediaQuery();
+  }
 };
 
 if (process.env.MODE && process.env.MODE === 'development') {
-  exportObj = {
-    ...exportObj,
-    initBehavior: initBehavior,
-    active: activeBehaviors,
-    getBehaviors: nodeBehaviors,
-    getProps: behaviorProperties,
-    getProp: behaviorProp,
-    setProp: behaviorProp,
-    callMethod: behaviorProp
-  };
+  Object.defineProperty(exportObj, 'loaded', {
+    get: () => {
+      return loadedBehaviorNames;
+    }
+  });
+  exportObj.activeBehaviors = activeBehaviors;
+  exportObj.active = activeBehaviors;
+  exportObj.getBehaviors = nodeBehaviors;
+  exportObj.getProps = behaviorProperties;
+  exportObj.getProp = behaviorProp;
+  exportObj.setProp = behaviorProp;
+  exportObj.callMethod = behaviorProp;
 }
 
-var manageBehaviors = exportObj;
-
-export { createBehavior, manageBehaviors };
+export { createBehavior, exportObj as manageBehaviors };
 //# sourceMappingURL=index.js.map
