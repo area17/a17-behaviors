@@ -554,10 +554,12 @@ function importBehavior(bName, bNode) {
       loadedBehaviors[bName] = module.default;
       initBehavior(bName, bNode);
       // check for other instances of this behavior that where awaiting load
-      behaviorsAwaitingImport.get(bName).forEach(node => {
-        initBehavior(bName, node);
-      });
-      behaviorsAwaitingImport.delete(bName);
+      if (behaviorsAwaitingImport.get(bName)) {
+        behaviorsAwaitingImport.get(bName).forEach(node => {
+          initBehavior(bName, node);
+        });
+        behaviorsAwaitingImport.delete(bName);
+      }
     } else {
       console.warn(`Tried to import ${bName}, but it seems to not be a behavior`);
       // fail, clean up
