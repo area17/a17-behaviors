@@ -502,22 +502,31 @@ function destroyBehavior(bName, bNode) {
 /*
   destroyBehaviors
 
-  bNode - node to destroy behaviors on
+  rNode - node to destroy behaviors on (and inside of)
 
   if a node with behaviors is removed from the DOM,
   clean up to save resources
 */
-function destroyBehaviors(bNode) {
-  const bNodeActiveBehaviors = activeBehaviors.get(bNode);
-  if (!bNodeActiveBehaviors) {
-    return;
-  }
-  Object.keys(bNodeActiveBehaviors).forEach(bName => {
-    destroyBehavior(bName, bNode);
-    // stop intersection observer from watching node
-    io.unobserve(bNode);
-    ioEntries.delete(bNode);
-    intersecting.delete(bNode);
+function destroyBehaviors(rNode) {
+  const bNodes = Array.from(activeBehaviors.keys());
+  bNodes.push(rNode);
+  bNodes.forEach(bNode => {
+    // is the active node the removed node
+    // or does the removed node contain the active node?
+    if (rNode === bNode || rNode.contains(bNode)) {
+      // get behaviors on node
+      const bNodeActiveBehaviors = activeBehaviors.get(bNode);
+      // if some, destroy
+      if (bNodeActiveBehaviors) {
+        Object.keys(bNodeActiveBehaviors).forEach(bName => {
+          destroyBehavior(bName, bNode);
+          // stop intersection observer from watching node
+          io.unobserve(bNode);
+          ioEntries.delete(bNode);
+          intersecting.delete(bNode);
+        });
+      }
+    }
   });
 }
 
