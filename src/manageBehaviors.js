@@ -1,7 +1,6 @@
 import resized from '@area17/a17-helpers/src/utility/resized';
 import getCurrentMediaQuery from '@area17/a17-helpers/src/utility/getCurrentMediaQuery';
-//import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
-import isBreakpoint from './isBreakpoint';
+import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
 import createBehavior from './createBehavior';
 
 let options = {

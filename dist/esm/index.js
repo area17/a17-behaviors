@@ -1,7 +1,7 @@
 var getCurrentMediaQuery = function() {
   // Doc: https://code.area17.com/a17/a17-helpers/wikis/getCurrentMediaQuery
 
-  return getComputedStyle(document.documentElement).getPropertyValue('--breakpoint').trim();
+  return getComputedStyle(document.documentElement).getPropertyValue('--breakpoint').trim().replace(/"/g, '');
 };
 
 var resized = function() {
@@ -58,8 +58,7 @@ const isBreakpoint = function (breakpoint, breakpoints) {
   }
 
   // we only want to look for a specific modifier and make sure it is at the end of the string
-  const pattern = /\+$|\-$/;
-  const regExp = new RegExp(pattern);
+  const regExp = new RegExp('\\+$|\\-$');
 
   // bps must be in order from smallest to largest
   let bps = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];

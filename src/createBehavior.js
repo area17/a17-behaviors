@@ -1,6 +1,5 @@
 import purgeProperties from '@area17/a17-helpers/src/utility/purgeProperties';
-//import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
-import isBreakpoint from './isBreakpoint';
+import isBreakpoint from '@area17/a17-helpers/src/utility/isBreakpoint';
 import manageBehaviors from './manageBehaviors';
 
 function Behavior(node, config = {}) {
