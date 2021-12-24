@@ -555,29 +555,49 @@ function importBehavior(bName, bNode) {
   // import
   // webpack interprets this, does some magic
   // process.env variables set in webpack config
-  Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(`${process.env.BEHAVIORS_PATH}${bName}.${process.env.BEHAVIORS_EXTENSION}`)); }).then(module => {
-    // does what we loaded look right?
-    if (module.default && typeof module.default === 'function') {
-      // import complete, go go go
-      loadedBehaviors[bName] = module.default;
-      initBehavior(bName, bNode);
-      // check for other instances of this behavior that where awaiting load
-      if (behaviorsAwaitingImport.get(bName)) {
-        behaviorsAwaitingImport.get(bName).forEach(node => {
-          initBehavior(bName, node);
-        });
-        behaviorsAwaitingImport.delete(bName);
-      }
-    } else {
-      console.warn(`Tried to import ${bName}, but it seems to not be a behavior`);
+  try {
+    Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(`${process.env.BEHAVIORS_PATH}${process.env.BEHAVIORS_COMPONENT_PATHS[bName]||''}${bName}.${process.env.BEHAVIORS_EXTENSION }`)); }).then(module => {
+      behaviorImported(bName, bNode, module);
+    }).catch(err => {
+      console.warn(`No loaded behavior called: ${bName}`);
+      // fail, clean up
+      importFailed(bName);
+    });
+  } catch(err1) {
+    try {
+      Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(`${process.env.BEHAVIORS_PATH}${bName}.${process.env.BEHAVIORS_EXTENSION}`)); }).then(module => {
+        behaviorImported(bName, bNode, module);
+      }).catch(err => {
+        console.warn(`No loaded behavior called: ${bName}`);
+        // fail, clean up
+        importFailed(bName);
+      });
+    } catch(err2) {
+      console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Webpack has generated your file. \nYou might also want to check your webpack config plugins DefinePlugin for process.env.BEHAVIORS_EXTENSION, process.env.BEHAVIORS_PATH and or process.env.BEHAVIORS_COMPONENT_PATHS. See https://github.com/area17/a17-behaviors/wiki/02-Setup#webpackcommonjs`);
       // fail, clean up
       importFailed(bName);
     }
-  }).catch(err => {
-    console.warn(`No loaded behavior called: ${bName}`);
+  }
+}
+
+function behaviorImported(bName, bNode, module) {
+  // does what we loaded look right?
+  if (module.default && typeof module.default === 'function') {
+    // import complete, go go go
+    loadedBehaviors[bName] = module.default;
+    initBehavior(bName, bNode);
+    // check for other instances of this behavior that where awaiting load
+    if (behaviorsAwaitingImport.get(bName)) {
+      behaviorsAwaitingImport.get(bName).forEach(node => {
+        initBehavior(bName, node);
+      });
+      behaviorsAwaitingImport.delete(bName);
+    }
+  } else {
+    console.warn(`Tried to import ${bName}, but it seems to not be a behavior`);
     // fail, clean up
     importFailed(bName);
-  });
+  }
 }
 
 /*
