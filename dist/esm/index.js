@@ -556,6 +556,16 @@ function importBehavior(bName, bNode) {
   }
 }
 
+/*
+  behaviorImported
+
+  bName - name of behavior
+  bNode - node to initialise behavior on
+  module - imported behavior module
+
+  Run when a dynamic import is successfully imported,
+  sets up and runs the behavior on the node
+*/
 function behaviorImported(bName, bNode, module) {
   // does what we loaded look right?
   if (module.default && typeof module.default === 'function') {
@@ -943,4 +953,3 @@ if (process.env.MODE && process.env.MODE === 'development') {
 }
 
 export { createBehavior, exportObj as manageBehaviors };
-//# sourceMappingURL=index.js.map

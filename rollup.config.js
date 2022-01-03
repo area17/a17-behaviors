@@ -10,14 +10,12 @@ export default [
       {
         dir: 'dist/esm',
         format: 'esm',
-        exports: 'named',
-        sourcemap: true
+        exports: 'named'
       },
       {
         dir: 'dist/cjs',
         format: 'cjs',
-        exports: 'named',
-        sourcemap: true
+        exports: 'named'
       }
     ]
   }
