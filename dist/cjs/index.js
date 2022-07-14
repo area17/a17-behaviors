@@ -11,25 +11,23 @@ function _interopNamespace(e) {
         var d = Object.getOwnPropertyDescriptor(e, k);
         Object.defineProperty(n, k, d.get ? d : {
           enumerable: true,
-          get: function () {
-            return e[k];
-          }
+          get: function () { return e[k]; }
         });
       }
     });
   }
-  n['default'] = e;
+  n["default"] = e;
   return Object.freeze(n);
 }
 
 var getCurrentMediaQuery = function() {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/getCurrentMediaQuery
+  // Doc: https://github.com/area17/a17-behaviors/wiki/getCurrentMediaQuery
 
   return getComputedStyle(document.documentElement).getPropertyValue('--breakpoint').trim().replace(/"/g, '');
 };
 
 var resized = function() {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/resized
+  // Doc: https://github.com/area17/a17-behaviors/wiki/resized
 
   var resizeTimer;
   var mediaQuery = getCurrentMediaQuery();
@@ -73,7 +71,7 @@ var resized = function() {
 };
 
 const isBreakpoint = function (breakpoint, breakpoints) {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/isBreakpoint
+  // Doc: https://github.com/area17/a17-behaviors/wiki/isBreakpoint
 
   // bail if no breakpoint is passed
   if (!breakpoint) {
@@ -146,7 +144,7 @@ const isBreakpoint = function (breakpoint, breakpoints) {
 };
 
 var purgeProperties = function(obj) {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/purgeProperties
+  // Doc: https://github.com/area17/a17-behaviors/wiki/purgeProperties
   for (var prop in obj) {
     if (obj.hasOwnProperty(prop)) {
       delete obj[prop];
@@ -318,7 +316,7 @@ Behavior.prototype = Object.freeze({
     }
   },
   addSubBehavior(SubBehavior, node = this.$node, config = {}) {
-    const mb = exportObj;
+    const mb = manageBehaviors;
     if (typeof SubBehavior === 'string') {
       mb.initBehavior(SubBehavior, node, config);
     } else {
@@ -556,7 +554,7 @@ function importBehavior(bName, bNode) {
   // webpack interprets this, does some magic
   // process.env variables set in webpack config
   try {
-    Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(`${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION }`)); }).then(module => {
+    (function (t) { return Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(t)); }); })(`${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION }`).then(module => {
       behaviorImported(bName, bNode, module);
     }).catch(err => {
       console.warn(`No loaded behavior called: ${bName}`);
@@ -565,7 +563,7 @@ function importBehavior(bName, bNode) {
     });
   } catch(err1) {
     try {
-      Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(`${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`)); }).then(module => {
+      (function (t) { return Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(t)); }); })(`${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`).then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
         console.warn(`No loaded behavior called: ${bName}`);
@@ -980,5 +978,7 @@ if (process.env.MODE && process.env.MODE === 'development') {
   exportObj.callMethod = behaviorProp;
 }
 
+var manageBehaviors = exportObj;
+
 exports.createBehavior = createBehavior;
-exports.manageBehaviors = exportObj;
+exports.manageBehaviors = manageBehaviors;

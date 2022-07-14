@@ -1,11 +1,11 @@
 var getCurrentMediaQuery = function() {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/getCurrentMediaQuery
+  // Doc: https://github.com/area17/a17-behaviors/wiki/getCurrentMediaQuery
 
   return getComputedStyle(document.documentElement).getPropertyValue('--breakpoint').trim().replace(/"/g, '');
 };
 
 var resized = function() {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/resized
+  // Doc: https://github.com/area17/a17-behaviors/wiki/resized
 
   var resizeTimer;
   var mediaQuery = getCurrentMediaQuery();
@@ -49,7 +49,7 @@ var resized = function() {
 };
 
 const isBreakpoint = function (breakpoint, breakpoints) {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/isBreakpoint
+  // Doc: https://github.com/area17/a17-behaviors/wiki/isBreakpoint
 
   // bail if no breakpoint is passed
   if (!breakpoint) {
@@ -122,7 +122,7 @@ const isBreakpoint = function (breakpoint, breakpoints) {
 };
 
 var purgeProperties = function(obj) {
-  // Doc: https://code.area17.com/a17/a17-helpers/wikis/purgeProperties
+  // Doc: https://github.com/area17/a17-behaviors/wiki/purgeProperties
   for (var prop in obj) {
     if (obj.hasOwnProperty(prop)) {
       delete obj[prop];
@@ -294,7 +294,7 @@ Behavior.prototype = Object.freeze({
     }
   },
   addSubBehavior(SubBehavior, node = this.$node, config = {}) {
-    const mb = exportObj;
+    const mb = manageBehaviors;
     if (typeof SubBehavior === 'string') {
       mb.initBehavior(SubBehavior, node, config);
     } else {
@@ -956,4 +956,6 @@ if (process.env.MODE && process.env.MODE === 'development') {
   exportObj.callMethod = behaviorProp;
 }
 
-export { createBehavior, exportObj as manageBehaviors };
+var manageBehaviors = exportObj;
+
+export { createBehavior, manageBehaviors };
