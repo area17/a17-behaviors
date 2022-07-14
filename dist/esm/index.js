@@ -782,9 +782,13 @@ function initBehavior(bName, bNode, config = {}) {
     nodeBehaviors[bName] = instance;
     activeBehaviors.set(bNode, nodeBehaviors);
     // init method in the behavior
-    instance.init();
-    //
-    return instance;
+    try {
+      instance.init();
+      return instance;
+    } catch(err) {
+      console.log(`Error in behavior '${ bName }' on:`, bNode);
+      console.log(err);
+    }
   }
 }
 
