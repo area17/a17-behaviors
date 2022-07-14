@@ -22,7 +22,7 @@
     "url": "https://github.com/area17/a17-behaviors/issues"
   },
   "dependencies": {
-    "@area17/a17-helpers": "^2.1.4"
+    "@area17/a17-helpers": "^3.0.1"
   },
   "devDependencies": {
     "rollup": "^2.51.2",
