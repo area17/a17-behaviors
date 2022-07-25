@@ -2,6 +2,26 @@ import purgeProperties from '@area17/a17-helpers/src/purgeProperties';
 import isBreakpoint from '@area17/a17-helpers/src/isBreakpoint';
 import manageBehaviors from './manageBehaviors';
 
+/**
+ * Behavior lifecycle
+ * @typedef {Object} Lifecycle
+ * @property {function} [init] - Init function called when behavior is created
+ * @property {function} [enabled] - Triggered when behavior state changed (ex: mediaquery update)
+ * @property {function} [disabled] - Triggered when behavior state changed (ex: mediaquery update)
+ * @property {function} [mediaQueryUpdated] - Triggered when mediaquery change
+ * @property {function} [intersectionIn] - Triggered when behavior is visible (enable intersection observer)
+ * @property {function} [intersectionOut] - Triggered when behavior is hidden (enable intersection observer)
+ * @property {function} [resized] - Triggered when window is resized
+ * @property {function} [destroy] - Triggered before behavior will be destroyed and removed
+ */
+
+/**
+ * A Behavior
+ * @param {Element} node - A DOM element
+ * @param config
+ * @returns {Behavior}
+ * @constructor
+ */
 function Behavior(node, config = {}) {
   if (!node || !(node instanceof Element)) {
     throw new Error('Node argument is required');
@@ -38,6 +58,10 @@ function Behavior(node, config = {}) {
   return this;
 }
 
+/**
+ *
+ * @type {Lifecycle}
+ */
 Behavior.prototype = Object.freeze({
   updateBinds(key, value) {
       // TODO: cache these before hand?
@@ -134,6 +158,13 @@ Behavior.prototype = Object.freeze({
 
     purgeProperties(this);
   },
+  /**
+   * Look for a child of the behavior: data-behaviorName-childName
+   * @param {string} childName
+   * @param {Element} context - Define the ancestor where search begin, default is current node
+   * @param {boolean} multi - Define usage between querySelectorAll and querySelector
+   * @returns {HTMLElement|null}
+   */
   getChild(childName, context, multi = false) {
     if (context == null) {
       context = this.$node;
@@ -145,6 +176,12 @@ Behavior.prototype = Object.freeze({
       '[data-' + this.name.toLowerCase() + '-' + childName.toLowerCase() + ']'
     );
   },
+  /**
+   * Look for children of the behavior: data-behaviorName-childName
+   * @param {string} childName
+   * @param {Element} context - Define the ancestor where search begin, default is current node
+   * @returns {HTMLElement|null}
+   */
   getChildren(childName, context) {
     return this.getChild(childName, context, true);
   },
@@ -220,6 +257,13 @@ Behavior.prototype = Object.freeze({
   }
 });
 
+/**
+ * Create a behavior instance
+ * @param {string} name - Name of the behavior used for declaration: data-behavior="name"
+ * @param {Object.<string, function>} def - define methods of the behavior
+ * @param {Lifecycle} lifecycle - Register behavior lifecycle
+ * @returns {function|{value: *, writable: boolean}}
+ */
 const createBehavior = (name, def, lifecycle = {}) => {
   const fn = function(...args) {
     Behavior.apply(this, args);
