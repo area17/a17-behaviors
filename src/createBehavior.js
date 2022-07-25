@@ -87,16 +87,16 @@ Behavior.prototype = Object.freeze({
     }
 
     // Behavior-specific lifecycle
-    if (this.lifecycle.init != null) {
+    if (typeof this.lifecycle?.init === 'function') {
       this.lifecycle.init.call(this);
     }
 
-    if (this.lifecycle.resized != null) {
+    if (typeof this.lifecycle?.resized === 'function') {
       this.__resizedBind = this.__resized.bind(this);
       window.addEventListener('resized', this.__resizedBind);
     }
 
-    if (this.lifecycle.mediaQueryUpdated != null || this.options.media) {
+    if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
       this.__mediaQueryUpdatedBind = this.__mediaQueryUpdated.bind(this);
       window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
     }
@@ -115,15 +115,15 @@ Behavior.prototype = Object.freeze({
     }
 
     // Behavior-specific lifecycle
-    if (this.lifecycle.destroy != null) {
+    if (typeof this.lifecycle?.destroy === 'function') {
       this.lifecycle.destroy.call(this);
     }
 
-    if (this.lifecycle.resized != null) {
+    if (typeof this.lifecycle.resized === 'function') {
       window.removeEventListener('resized', this.__resizedBind);
     }
 
-    if (this.lifecycle.mediaQueryUpdated != null || this.options.media) {
+    if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
       window.removeEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
     }
 
@@ -153,13 +153,13 @@ Behavior.prototype = Object.freeze({
   },
   enable() {
     this.__isEnabled = true;
-    if (this.lifecycle.enabled != null) {
+    if (typeof this.lifecycle.enabled === 'function') {
       this.lifecycle.enabled.call(this);
     }
   },
   disable() {
     this.__isEnabled = false;
-    if (this.lifecycle.disabled != null) {
+    if (typeof this.lifecycle.disabled === 'function') {
       this.lifecycle.disabled.call(this);
     }
   },
@@ -184,7 +184,7 @@ Behavior.prototype = Object.freeze({
     }
   },
   __mediaQueryUpdated(e) {
-    if (this.lifecycle.mediaQueryUpdated != null) {
+    if (typeof this.lifecycle?.mediaQueryUpdated === 'function') {
       this.lifecycle.mediaQueryUpdated.call(this, e);
     }
     if (this.options.media) {
@@ -192,7 +192,7 @@ Behavior.prototype = Object.freeze({
     }
   },
   __resized(e) {
-    if (this.lifecycle.resized != null) {
+    if (typeof this.lifecycle?.resized === 'function') {
       this.lifecycle.resized.call(this, e);
     }
   },
@@ -202,12 +202,12 @@ Behavior.prototype = Object.freeze({
         entries.forEach(entry => {
           if (entry.target === this.$node) {
             if (entry.isIntersecting) {
-              if (!this.__isIntersecting && this.lifecycle.intersectionIn != null) {
+              if (!this.__isIntersecting && typeof this.lifecycle.intersectionIn === 'function') {
                 this.__isIntersecting = true;
                 this.lifecycle.intersectionIn.call(this);
               }
             } else {
-              if (this.__isIntersecting && this.lifecycle.intersectionOut != null) {
+              if (this.__isIntersecting && typeof this.lifecycle.intersectionOut === 'function') {
                 this.__isIntersecting = false;
                 this.lifecycle.intersectionOut.call(this);
               }
