@@ -154,7 +154,16 @@ function importBehavior(bName, bNode) {
     const componentPaths = (process.env.BEHAVIORS_COMPONENT_PATHS[bName] || false)
       ? `/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/`
       : '/'
-    import(`${process.env.BEHAVIORS_PATH}${componentPaths}${bName}.${process.env.BEHAVIORS_EXTENSION }`).then(module => {
+
+    import(
+      /**
+       * Vite bundler rises a warning because import url start with a variable
+       * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
+       * Warning will be hidden with the below directive vite-ignore
+       */
+      /* @vite-ignore */
+      `${process.env.BEHAVIORS_PATH}${componentPaths}${bName}.${process.env.BEHAVIORS_EXTENSION }`
+    ).then(module => {
       behaviorImported(bName, bNode, module);
     }).catch(err => {
       console.warn(`No loaded behavior called: ${bName}`);
