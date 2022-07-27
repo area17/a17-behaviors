@@ -11,6 +11,7 @@ let options = {
   },
   breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl']
 };
+
 let loadedBehaviorNames = [];
 let observingBehaviors = false;
 const loadedBehaviors = {};
@@ -20,36 +21,38 @@ let io;
 const ioEntries = new Map(); // need to keep a separate map of intersection observer entries as `io.takeRecords()` always returns an empty array, seems broken in all browsers 🤷🏻‍♂️
 const intersecting = new Map();
 
-/*
-  getBehaviorNames
-
-  Data attribute names can be written in any case,
-  but `node.dataset` names are lowercase
-  with camel casing for names split by -
-  eg: `data-foo-bar` becomes `node.dataset.fooBar`
-
-  bNode - node to grab behavior names from
-  attr - name of attribute to pick
-*/
+/**
+ * getBehaviorNames
+ *
+ * Data attribute names can be written in any case,
+ * but `node.dataset` names are lowercase
+ * with camel casing for names split by -
+ * eg: `data-foo-bar` becomes `node.dataset.fooBar`
+ *
+ * @param {HTMLElement} bNode - node to grab behavior names from
+ * @param {string} attr - name of attribute to pick
+ * @returns {string[]}
+ */
 function getBehaviorNames(bNode, attr) {
   attr = attr.toLowerCase().replace(/-([a-zA-Z0-9])/ig, (match, p1) => {
     return p1.toUpperCase();
   });
   if (bNode.dataset && bNode.dataset[attr]) {
-    return bNode.dataset && bNode.dataset[attr] && bNode.dataset[attr].split(' ');
+    return bNode.dataset[attr].split(' ');
   } else {
     return [];
   }
 }
 
-/*
-  importFailed
-
-  bName - name of behavior that failed to import
-
-  Either the imported module didn't look like a behavior module
-  or nothing could be found to import
-*/
+/**
+ *  importFailed
+ *
+ *
+ *  Either the imported module didn't look like a behavior module
+ *  or nothing could be found to import
+ *
+ * @param {string }bName - name of behavior that failed to import
+ */
 function importFailed(bName) {
   // remove name from loaded behavior names index
   // maybe it'll be included via a script tag later
@@ -59,28 +62,30 @@ function importFailed(bName) {
   }
 }
 
-/*
-  destroyBehavior
-
-  All good things must come to an end...
-  Ok so likely the node has been removed, possibly by
-  a deletion or ajax type page change
-
-  bName - name of behavior to destroy
-  bNode - node to destroy behavior on
-
-  `destroy()` is an internal method of a behavior
-  in `createBehavior`. Individual behaviors may
-  also have their own `destroy` methods (called by
-  the `createBehavior` `destroy`)
-*/
+/**
+ *  destroyBehavior
+ *
+ *
+ *  All good things must come to an end...
+ *  Ok so likely the node has been removed, possibly by
+ *  a deletion or ajax type page change
+ *
+ * @param {string} bName - name of behavior to destroy
+ * @param {string} bNode  - node to destroy behavior on
+ */
 function destroyBehavior(bName, bNode) {
   const nodeBehaviors = activeBehaviors.get(bNode);
   if (!nodeBehaviors || !nodeBehaviors[bName]) {
     console.warn(`No behavior '${bName}' instance on:`, bNode);
     return;
   }
-  // run destroy method, remove, delete
+
+  /**
+   *   run destroy method, remove, delete
+   *   `destroy()` is an internal method of a behavior in `createBehavior`. Individual behaviors may
+   *   also have their own `destroy` methods (called by
+   *   the `createBehavior` `destroy`)
+   */
   nodeBehaviors[bName].destroy();
   delete nodeBehaviors[bName];
   if (Object.keys(nodeBehaviors).length === 0) {
@@ -88,14 +93,14 @@ function destroyBehavior(bName, bNode) {
   }
 }
 
-/*
-  destroyBehaviors
-
-  rNode - node to destroy behaviors on (and inside of)
-
-  if a node with behaviors is removed from the DOM,
-  clean up to save resources
-*/
+/**
+ * destroyBehaviors
+ *
+ * if a node with behaviors is removed from the DOM,
+ * clean up to save resources
+ *
+ * @param {HTMLElement} rNode -node to destroy behaviors on (and inside of)
+ */
 function destroyBehaviors(rNode) {
   const bNodes = Array.from(activeBehaviors.keys());
   bNodes.push(rNode);
@@ -119,16 +124,16 @@ function destroyBehaviors(rNode) {
   });
 }
 
-/*
-  importBehavior
-
-  bName - name of behavior
-  bNode - node to initialise behavior on
-
-  Use `import` to bring in a behavior module and run it.
-  This runs if there is no loaded behavior of this name.
-  After import, the behavior is initialised on the node
-*/
+/**
+ * importBehavior
+ *
+ * Use `import` to bring in a behavior module and run it.
+ * This runs if there is no loaded behavior of this name.
+ * After import, the behavior is initialised on the node
+ *
+ * @param {string} bName - name of behavior
+ * @param {HTMLElement} bNode - node to initialise behavior on
+ */
 function importBehavior(bName, bNode) {
   // first check we haven't already got this behavior module
   if (loadedBehaviorNames.indexOf(bName) > -1) {
@@ -146,7 +151,15 @@ function importBehavior(bName, bNode) {
   // webpack interprets this, does some magic
   // process.env variables set in webpack config
   try {
-    import(`${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION }`).then(module => {
+    import(
+      /**
+       * Vite bundler rises a warning because import url start with a variable
+       * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
+       * Warning will be hidden with the below directive vite-ignore
+       */
+      /* @vite-ignore */
+      `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION }`
+    ).then(module => {
       behaviorImported(bName, bNode, module);
     }).catch(err => {
       console.warn(`No loaded behavior called: ${bName}`);
@@ -155,7 +168,15 @@ function importBehavior(bName, bNode) {
     });
   } catch(err1) {
     try {
-      import(`${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`).then(module => {
+      import(
+        /**
+         * Vite bundler rises a warning because import url start with a variable
+         * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
+         * Warning will be hidden with the below directive vite-ignore
+         */
+        /* @vite-ignore */
+        `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+      ).then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
         console.warn(`No loaded behavior called: ${bName}`);
@@ -170,16 +191,16 @@ function importBehavior(bName, bNode) {
   }
 }
 
-/*
-  behaviorImported
-
-  bName - name of behavior
-  bNode - node to initialise behavior on
-  module - imported behavior module
-
-  Run when a dynamic import is successfully imported,
-  sets up and runs the behavior on the node
-*/
+/**
+ * behaviorImported
+ *
+ * Run when a dynamic import is successfully imported,
+ * sets up and runs the behavior on the node
+ *
+ * @param {string} bName - name of behavior
+ * @param {HTMLElement} bNode - node to initialise behavior on
+ * @param module  - imported behavior module
+ */
 function behaviorImported(bName, bNode, module) {
   // does what we loaded look right?
   if (module.default && typeof module.default === 'function') {
@@ -200,13 +221,13 @@ function behaviorImported(bName, bNode, module) {
   }
 }
 
-/*
-  createBehaviors
-
-  node - node to check for behaviors on elements
-
-  assign behaviors to nodes
-*/
+/**
+ * createBehaviors
+ *
+ * assign behaviors to nodes
+ *
+ * @param {HTMLElement} node - node to check for behaviors on elements
+ */
 function createBehaviors(node) {
   // Ignore text or comment nodes
   if (!('querySelectorAll' in node)) {
@@ -250,13 +271,13 @@ function createBehaviors(node) {
   });
 }
 
-/*
-  observeBehaviors
-
-  runs a `MutationObserver`, which watches for DOM changes
-  when a DOM change happens, insertion or deletion,
-  the call back runs, informing us of what changed
-*/
+/**
+ * observeBehaviors
+ *
+ * runs a `MutationObserver`, which watches for DOM changes
+ * when a DOM change happens, insertion or deletion,
+ * the call back runs, informing us of what changed
+ */
 function observeBehaviors() {
   // flag to stop multiple MutationObserver
   observingBehaviors = true;
@@ -281,18 +302,17 @@ function observeBehaviors() {
   });
 }
 
-/*
-  loopLazyBehaviorNodes
-
-  bNodes - elements to check for lazy behaviors
-
-  Looks at the nodes that have lazy behaviors, checks
-  if they're intersecting, optionally checks the breakpoint
-  and initialises if needed. Cleans up after itself, by
-  removing the intersection observer observing of the node
-  if all lazy behaviors on a node have been initialised
-*/
-
+/**
+ * loopLazyBehaviorNodes
+ *
+ * Looks at the nodes that have lazy behaviors, checks
+ * if they're intersecting, optionally checks the breakpoint
+ * and initialises if needed. Cleans up after itself, by
+ * removing the intersection observer observing of the node
+ * if all lazy behaviors on a node have been initialised
+ *
+ * @param {HTMLElement[]} bNodes - elements to check for lazy behaviors
+ */
 function loopLazyBehaviorNodes(bNodes) {
   bNodes.forEach(bNode => {
     // first, check if this node is being intersected
@@ -328,16 +348,16 @@ function loopLazyBehaviorNodes(bNodes) {
   });
 }
 
-/*
-  intersection
-
-  entries - intersection observer entries
-
-  The intersection observer call back,
-  sets a value in the intersecting map true/false
-  and if an entry is intersecting, checks if needs to
-  init any lazy behaviors
-*/
+/**
+ * intersection
+ *
+ * The intersection observer call back,
+ * sets a value in the intersecting map true/false
+ * and if an entry is intersecting, checks if needs to
+ * init any lazy behaviors
+ *
+ * @param {IntersectionObserverEntry[]} entries
+ */
 function intersection(entries) {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -349,12 +369,12 @@ function intersection(entries) {
   });
 }
 
-/*
-  mediaQueryUpdated
-
-  If a resize has happened with enough size that a
-  breakpoint has changed, checks to see if any lazy
-  behaviors need to be initialised or not
+/**
+ * mediaQueryUpdated
+ *
+ * If a resize has happened with enough size that a
+ * breakpoint has changed, checks to see if any lazy
+ * behaviors need to be initialised or not
 */
 function mediaQueryUpdated() {
   loopLazyBehaviorNodes(Array.from(ioEntries.keys()));
@@ -363,18 +383,21 @@ function mediaQueryUpdated() {
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Public methods */
 
-/*
-  initBehavior
 
-  bName - name of behavior
-  bNode - node to initialise behavior on
-
-  Is returned as public method
-
-  Run the `init` method inside of a behavior,
-  the internal one in `createBehavior`, which then
-  runs the behaviors `init` life cycle method
-*/
+/**
+ * initBehavior
+ *
+ * Return behavior instance if behavior is already loaded
+ *
+ * Run the `init` method inside a behavior,
+ * the internal one in `createBehavior`, which then
+ * runs the behaviors `init` life cycle method
+ *
+ * @param {string} bName - name of behavior
+ * @param {HTMLElement} bNode - node to initialise behavior on
+ * @param config
+ * @returns {Behavior|void}
+ */
 function initBehavior(bName, bNode, config = {}) {
   // first check we have a loaded behavior
   if (!loadedBehaviors[bName]) {
@@ -406,22 +429,20 @@ function initBehavior(bName, bNode, config = {}) {
   }
 }
 
-/*
-  addBehaviors
-
-  behaviors - behaviors modules, module or object
-
-  Is returned as public method
-
-  Can pass
-  - a singular behavior as created by `createBehavior`,
-  - a behavior object which will be passed to `createBehavior`
-  - a behavior module
-  - a collection of behavior modules
-
-  Adds each behavior to memory, to be initialised to a DOM node when the
-  corresponding DOM node exists
-*/
+/**
+ * addBehaviors
+ *
+ * Adds each behavior to memory, to be initialised to a DOM node when the
+ * corresponding DOM node exists
+ *
+ * Can pass
+ * - a singular behavior as created by `createBehavior`,
+ * - a behavior object which will be passed to `createBehavior`
+ * - a behavior module
+ * - a collection of behavior modules
+ *
+ * @param {function|string} behaviors
+ */
 function addBehaviors(behaviors) {
     // if singular behavior added, sort into module like structure
     if (typeof behaviors === 'function' && behaviors.prototype.behaviorName) {
@@ -448,15 +469,16 @@ function addBehaviors(behaviors) {
     }
 }
 
-/*
-  nodeBehaviors
-
-  bNode - node on which to get active behaviors on
-
-  Is returned as public method when webpack is set to development mode
-
-  Returns all active behaviors on a node
-*/
+/**
+ * nodeBehaviors
+ *
+ *  Is returned as public method when webpack is set to development mode
+ *
+ *  Returns all active behaviors on a node
+ *
+ * @param {string} bNode - node on which to get active behaviors on
+ * @returns {Object.<string, Behavior>}
+ */
 function nodeBehaviors(bNode) {
   const nodeBehaviors = activeBehaviors.get(bNode);
   if (!nodeBehaviors) {
@@ -466,16 +488,17 @@ function nodeBehaviors(bNode) {
   }
 }
 
-/*
-  behaviorProperties
-
-  bName - name of behavior to return properties of
-  bNode - node on which the behavior is running
-
-  Is returned as public method when webpack is set to development mode
-
-  Returns all properties of a behavior
-*/
+/**
+ * behaviorProperties
+ *
+ * Is returned as public method when webpack is set to development mode
+ *
+ * Returns all properties of a behavior
+ *
+ * @param {string} bName - name of behavior to return properties of
+ * @param {string} bNode - node on which the behavior is running
+ * @returns {Behavior|void}
+ */
 function behaviorProperties(bName, bNode) {
   const nodeBehaviors = activeBehaviors.get(bNode);
   if (!nodeBehaviors || !nodeBehaviors[bName]) {
@@ -485,19 +508,20 @@ function behaviorProperties(bName, bNode) {
   }
 }
 
-/*
-  behaviorProp
-
-  bName - name of behavior to return properties of
-  bNode - node on which the behavior is running
-  prop - property to return or set
-  value - value to set
-
-  Is returned as public method when webpack is set to development mode
-
-  Returns specific property of a behavior on a node, or runs a method
-  or sets a property on a behavior if a value is set. For debuggging.
-*/
+/**
+ * behaviorProp
+ *
+ * Is returned as public method when webpack is set to development mode
+ *
+ * Returns specific property of a behavior on a node, or runs a method
+ * or sets a property on a behavior if a value is set. For debuggging.
+ *
+ * @param {string} bName - name of behavior to return properties of
+ * @param {string} bNode - node on which the behavior is running
+ * @param {string} prop - property to return or set
+ * @param [value] - value to set
+ * @returns {*}
+ */
 function behaviorProp(bName, bNode, prop, value) {
   const nodeBehaviors = activeBehaviors.get(bNode);
   if (!nodeBehaviors || !nodeBehaviors[bName]) {
@@ -523,8 +547,15 @@ function behaviorProp(bName, bNode, prop, value) {
   loadedBehaviorsModule - optional behaviors module to load on init
   opts - any options for this instance
 */
-
-function init(loadedBehaviorsModule, opts) {
+/**
+ * init
+ *
+ * gets this show on the road
+ *
+ * @param [loadedBehaviorsModule]  - optional behaviors module to load on init
+ * @param opts - any options for this instance
+ */
+function init(loadedBehaviorsModule, opts = {}) {
   options = {
     ...options, ...opts
   }
