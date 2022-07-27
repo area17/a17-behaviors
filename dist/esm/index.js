@@ -614,10 +614,6 @@ function importBehavior(bName, bNode) {
   // webpack interprets this, does some magic
   // process.env variables set in webpack config
   try {
-    const componentPaths = (process.env.BEHAVIORS_COMPONENT_PATHS[bName] || false)
-      ? `/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/`
-      : '/';
-
     import(
       /**
        * Vite bundler rises a warning because import url start with a variable
@@ -625,7 +621,7 @@ function importBehavior(bName, bNode) {
        * Warning will be hidden with the below directive vite-ignore
        */
       /* @vite-ignore */
-      `${process.env.BEHAVIORS_PATH}${componentPaths}${bName}.${process.env.BEHAVIORS_EXTENSION }`
+      `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION }`
     ).then(module => {
       behaviorImported(bName, bNode, module);
     }).catch(err => {
@@ -634,9 +630,27 @@ function importBehavior(bName, bNode) {
       importFailed(bName);
     });
   } catch(err1) {
+    try {
+      import(
+        /**
+         * Vite bundler rises a warning because import url start with a variable
+         * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
+         * Warning will be hidden with the below directive vite-ignore
+         */
+        /* @vite-ignore */
+        `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+      ).then(module => {
+        behaviorImported(bName, bNode, module);
+      }).catch(err => {
+        console.warn(`No loaded behavior called: ${bName}`);
+        // fail, clean up
+        importFailed(bName);
+      });
+    } catch(err2) {
       console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
       // fail, clean up
       importFailed(bName);
+    }
   }
 }
 
