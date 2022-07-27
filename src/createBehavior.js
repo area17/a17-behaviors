@@ -3,24 +3,48 @@ import isBreakpoint from '@area17/a17-helpers/src/isBreakpoint';
 import manageBehaviors from './manageBehaviors';
 
 /**
- * Behavior lifecycle
- * @typedef {Object} Lifecycle
- * @property {function} [init] - Init function called when behavior is created
- * @property {function} [enabled] - Triggered when behavior state changed (ex: mediaquery update)
- * @property {function} [disabled] - Triggered when behavior state changed (ex: mediaquery update)
- * @property {function} [mediaQueryUpdated] - Triggered when mediaquery change
- * @property {function} [intersectionIn] - Triggered when behavior is visible (enable intersection observer)
- * @property {function} [intersectionOut] - Triggered when behavior is hidden (enable intersection observer)
- * @property {function} [resized] - Triggered when window is resized
- * @property {function} [destroy] - Triggered before behavior will be destroyed and removed
+ * Behavior
+ * @typedef {Object.<string, any>|BehaviorDef} Behavior
+ * @property {HTMLElement} $node - Dom node associated to the behavior
+ * @property {string} name - Name of the behavior
+ * @property {Object} options
+ * @property {Lifecycle} lifecycle
  */
 
 /**
- * A Behavior
- * @param {Element} node - A DOM element
- * @param config
- * @returns {Behavior}
+ * Behavior lifecycle
+ * @typedef {Object} Lifecycle
+ * @property {BehaviorLifecycleFn} [init] - Init function called when behavior is created
+ * @property {BehaviorLifecycleFn} [enabled] - Triggered when behavior state changed (ex: mediaquery update)
+ * @property {BehaviorLifecycleFn} [disabled] - Triggered when behavior state changed (ex: mediaquery update)
+ * @property {BehaviorLifecycleFn} [mediaQueryUpdated] - Triggered when mediaquery change
+ * @property {BehaviorLifecycleFn} [intersectionIn] - Triggered when behavior is visible (enable intersection observer)
+ * @property {BehaviorLifecycleFn} [intersectionOut] - Triggered when behavior is hidden (enable intersection observer)
+ * @property {BehaviorLifecycleFn} [resized] - Triggered when window is resized
+ * @property {BehaviorLifecycleFn} [destroy] - Triggered before behavior will be destroyed and removed
+ */
+
+/**
+ * @typedef {function} BehaviorLifecycleFn
+ * @this Behavior
+ */
+
+/**
+ * @typedef {function} BehaviorDefFn
+ * @this Behavior
+ */
+
+/**
+ * Behavior definition
+ * @typedef {Object.<string, BehaviorDefFn>} BehaviorDef
+ */
+
+/**
+ * Behavior constructor
  * @constructor
+ * @param {HTMLElement} node - A DOM element
+ * @param config - behavior options
+ * @returns {Behavior}
  */
 function Behavior(node, config = {}) {
   if (!node || !(node instanceof Element)) {
@@ -53,14 +77,14 @@ function Behavior(node, config = {}) {
   });
 
   this.__isIntersecting = false;
-  this.__intersectionObserver;
+  this.__intersectionObserver = null;
 
   return this;
 }
 
 /**
  *
- * @type {Lifecycle}
+ * @type {Behavior}
  */
 Behavior.prototype = Object.freeze({
   updateBinds(key, value) {
@@ -161,7 +185,7 @@ Behavior.prototype = Object.freeze({
   /**
    * Look for a child of the behavior: data-behaviorName-childName
    * @param {string} childName
-   * @param {Element} context - Define the ancestor where search begin, default is current node
+   * @param {HTMLElement} context - Define the ancestor where search begin, default is current node
    * @param {boolean} multi - Define usage between querySelectorAll and querySelector
    * @returns {HTMLElement|null}
    */
@@ -179,7 +203,7 @@ Behavior.prototype = Object.freeze({
   /**
    * Look for children of the behavior: data-behaviorName-childName
    * @param {string} childName
-   * @param {Element} context - Define the ancestor where search begin, default is current node
+   * @param {HTMLElement} context - Define the ancestor where search begin, default is current node
    * @returns {HTMLElement|null}
    */
   getChildren(childName, context) {
@@ -209,6 +233,11 @@ Behavior.prototype = Object.freeze({
       mb.initBehavior(SubBehavior.prototype.behaviorName, node, config);
     }
   },
+  /**
+   * Check if breakpoint passed in param is the current one
+   * @param {string} bp - Breakpoint to check
+   * @returns {boolean}
+   */
   isBreakpoint(bp) {
     return isBreakpoint(bp, this.__breakpoints);
   },
@@ -260,11 +289,15 @@ Behavior.prototype = Object.freeze({
 /**
  * Create a behavior instance
  * @param {string} name - Name of the behavior used for declaration: data-behavior="name"
- * @param {Object.<string, function>} def - define methods of the behavior
+ * @param {BehaviorDef} def - define methods of the behavior
  * @param {Lifecycle} lifecycle - Register behavior lifecycle
- * @returns {function|{value: *, writable: boolean}}
+ * @returns {Behavior}
  */
 const createBehavior = (name, def, lifecycle = {}) => {
+  /**
+   *
+   * @param args
+   */
   const fn = function(...args) {
     Behavior.apply(this, args);
   };
