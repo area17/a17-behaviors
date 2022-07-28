@@ -586,19 +586,23 @@ let exportObj = {
   }
 }
 
-if (process.env.MODE && process.env.MODE === 'development') {
-  Object.defineProperty(exportObj, 'loaded', {
-    get: () => {
-      return loadedBehaviorNames;
-    }
-  });
-  exportObj.activeBehaviors = activeBehaviors;
-  exportObj.active = activeBehaviors;
-  exportObj.getBehaviors = nodeBehaviors;
-  exportObj.getProps = behaviorProperties;
-  exportObj.getProp = behaviorProp;
-  exportObj.setProp = behaviorProp;
-  exportObj.callMethod = behaviorProp;
+try {
+  if (process.env.MODE === 'development') {
+    Object.defineProperty(exportObj, 'loaded', {
+      get: () => {
+        return loadedBehaviorNames;
+      }
+    });
+    exportObj.activeBehaviors = activeBehaviors;
+    exportObj.active = activeBehaviors;
+    exportObj.getBehaviors = nodeBehaviors;
+    exportObj.getProps = behaviorProperties;
+    exportObj.getProp = behaviorProp;
+    exportObj.setProp = behaviorProp;
+    exportObj.callMethod = behaviorProp;
+  }
+} catch(err) {
+  // no process.env.mode
 }
 
 export default exportObj;
