@@ -1,25 +1,5 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  var n = Object.create(null);
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: function () { return e[k]; }
-        });
-      }
-    });
-  }
-  n["default"] = e;
-  return Object.freeze(n);
-}
-
 var getCurrentMediaQuery = function() {
   // Doc: https://github.com/area17/a17-behaviors/wiki/getCurrentMediaQuery
 
@@ -636,7 +616,7 @@ function importBehavior(bName, bNode) {
   // webpack interprets this, does some magic
   // process.env variables set in webpack config
   try {
-    (function (t) { return Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(t)); }); })(
+    import(
       /**
        * Vite bundler rises a warning because import url start with a variable
        * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
@@ -653,7 +633,7 @@ function importBehavior(bName, bNode) {
     });
   } catch(err1) {
     try {
-      (function (t) { return Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(t)); }); })(
+      import(
         /**
          * Vite bundler rises a warning because import url start with a variable
          * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations

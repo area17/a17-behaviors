@@ -1,7 +1,6 @@
 import nodeResolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 
-const input = ['src/index.js']
 export default [
   {
     input: 'src/index.js',
