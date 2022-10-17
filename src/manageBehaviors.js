@@ -175,7 +175,7 @@ function importBehavior(bName, bNode) {
          * Warning will be hidden with the below directive vite-ignore
          */
         /* @vite-ignore */
-        `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+        `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION || 'js' }`
       ).then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
