@@ -621,7 +621,7 @@ function importBehavior(bName, bNode) {
        * Warning will be hidden with the below directive vite-ignore
        */
       /* @vite-ignore */
-      `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION || 'js' }`
+      `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
     ).then(module => {
       behaviorImported(bName, bNode, module);
     }).catch(err => {
