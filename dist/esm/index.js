@@ -923,12 +923,6 @@ function addBehaviors(behaviors) {
       unique.forEach(bName => {
         loadedBehaviors[bName] = behaviors[bName];
       });
-      // try and apply behaviors to any DOM node that needs them
-      createBehaviors(document);
-      // start the mutation observer looking for DOM changes
-      if (!observingBehaviors) {
-        observeBehaviors();
-      }
     }
 }
 
@@ -1032,6 +1026,14 @@ function init(loadedBehaviorsModule, opts = {}) {
   // if fn run with supplied behaviors, lets add them and begin
   if (loadedBehaviorsModule) {
     addBehaviors(loadedBehaviorsModule);
+  }
+
+  // try and apply behaviors to any DOM node that needs them
+  createBehaviors(document);
+
+  // start the mutation observer looking for DOM changes
+  if (!observingBehaviors) {
+    observeBehaviors();
   }
 
   // watch for break point changes
