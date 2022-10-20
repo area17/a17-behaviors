@@ -577,11 +577,31 @@ function init(loadedBehaviorsModule, opts = {}) {
   window.addEventListener('mediaQueryUpdated', mediaQueryUpdated);
 }
 
+/**
+ * addAndInit
+ *
+ * Can pass
+ * - a singular behavior as created by `createBehavior`,
+ * - a behavior object which will be passed to `createBehavior`
+ * - a behavior module
+ * - a collection of behavior modules
+ *
+ * @param [behaviors]  - optional behaviors module to load on init
+ */
+function addAndInit(behaviors) {
+  if(behaviors) {
+    addBehaviors(behaviors);
+
+    // try and apply behaviors to any DOM node that needs them
+    createBehaviors(document);
+  }
+}
+
 // expose public methods, essentially returning
 
 let exportObj = {
   init: init,
-  add: addBehaviors,
+  add: addAndInit,
   initBehavior: initBehavior,
   get currentBreakpoint() {
     return getCurrentMediaQuery();
