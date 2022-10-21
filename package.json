@@ -1,6 +1,6 @@
 {
   "name": "@area17/a17-behaviors",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "JavaScript framework to attach JavaScript events and interactions to DOM Nodes",
   "type": "module",
   "scripts": {

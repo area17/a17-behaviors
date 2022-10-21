@@ -1050,10 +1050,11 @@ function init(loadedBehaviorsModule, opts = {}) {
  * - a collection of behavior modules
  *
  * @param [behaviors]  - optional behaviors module to load on init
+ * (all arguments are passed to addBehaviors)
  */
-function addAndInit(behaviors) {
-  if(behaviors) {
-    addBehaviors(behaviors);
+function addAndInit() {
+  if (arguments) {
+    addBehaviors.apply(null, arguments);
 
     // try and apply behaviors to any DOM node that needs them
     createBehaviors(document);
