@@ -38,7 +38,7 @@ function getBehaviorNames(bNode, attr) {
     return p1.toUpperCase();
   });
   if (bNode.dataset && bNode.dataset[attr]) {
-    return bNode.dataset[attr].split(' ');
+    return bNode.dataset[attr].split(' ').filter(bName => bName);
   } else {
     return [];
   }
