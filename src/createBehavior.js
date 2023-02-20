@@ -39,6 +39,60 @@ import manageBehaviors from './manageBehaviors';
  * @typedef {Object.<string, BehaviorDefFn>} BehaviorDef
  */
 
+const abortController = new AbortController();
+const abortControllerSignal = abortController.signal;
+
+function BehaviorCollection(elements) {
+  elements.forEach((el, i) => {
+    this[i] = el;
+  });
+}
+
+BehaviorCollection.prototype = {
+  forEach:function(func){
+    Object.values(this).forEach(value => {
+      func.call(value, value);
+    })
+  },
+  on:function(type,fn,opt){
+    if (typeof opt === 'boolean' && opt === true) {
+      opt = {
+        passive: true
+      };
+    }
+    const options = {
+      signal: abortController.signal,
+      ...opt
+    };
+    this.forEach(el => {
+      el.removeEventListener(type, fn);
+      el.addEventListener(type, fn, options);
+    });
+    return this;
+  },
+  off:function(type){
+    this.forEach(el => {
+      el.removeEventListener(type, fn);
+    });
+    return this;
+  },
+  /*
+  // Add other methods?
+  addClass:function(className){
+    this.forEach(el => {
+      el.classList.add(className);
+    });
+    return this;
+  },
+  removeClass:function(className){
+    this.forEach(el => {
+      el.classList.remove(className);
+    });
+    return this;
+  },
+  */
+};
+
 /**
  * Behavior constructor
  * @constructor
@@ -61,7 +115,8 @@ function Behavior(node, config = {}) {
   this.__isEnabled = false;
   this.__children = config.children;
   this.__breakpoints = config.breakpoints;
-  this.__abortController = new AbortController();
+  this.__abortController = abortController;
+  this.__abortControllerSignal = abortControllerSignal;
 
   // Auto-bind all custom methods to "this"
   this.customMethodNames.forEach(methodName => {
@@ -236,57 +291,14 @@ Behavior.prototype = Object.freeze({
   isBreakpoint(bp) {
     return isBreakpoint(bp, this.__breakpoints);
   },
-  /**
-   * Attach event listener with signal and auto clean up on destroy
-   * @param {node} els - DOM node to attach to
-   * @param {type} type - Event type
-   * @param {function} fn - Function to run on event
-   * @param {object} opt - event listener options
-   */
-  on(els, type, fn, opt = {}) {
-    if (typeof opt === 'boolean' && opt === true) {
-      opt = {
-        passive: true
-      };
+  collection(selector, context) {
+    let nodes = [];
+    if (selector && typeof selector !== 'string') {
+      nodes = (selector.forEach) ? selector : [selector];
+    } else if (selector) {
+      nodes = this.getChildren(selector, context);
     }
-    const options = {
-      signal: this.__abortController.signal,
-      ...opt
-    };
-    if (typeof els === 'string') {
-      els = this.getChildren(els);
-    } else if (els instanceof HTMLElement || els === window || els === document) {
-      els = [els];
-    }
-    if (els?.length) {
-      els.forEach(el => {
-        try {
-          el.addEventListener(type, fn, options);
-        } catch (err) {
-          console.log(`${this.name}:on - no DOM node found`, err);
-        }
-      });
-    } else {
-      console.log(`${this.name}:on - no DOM node found`);
-    }
-  },
-  /**
-   * Manual un-attach event listener
-   * @param {node} el - DOM node to attached to
-   * @param {type} type - Event type
-   * @param {function} fn - Function that runs on event
-   */
-  off(els, type, fn) {
-    if (typeof els === 'string') {
-      els = this.getChildren(els);
-    } else if (els instanceof HTMLElement) {
-      els = [els];
-    }
-    els.forEach(el => {
-      try {
-        el.removeEventListener(type, fn);
-      } catch(err) {}
-    });
+    return new BehaviorCollection(nodes);
   },
   __toggleEnabled() {
     const isValidMQ = isBreakpoint(this.options.media, this.__breakpoints);

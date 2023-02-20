@@ -169,6 +169,60 @@ var purgeProperties = function(obj) {
  * @typedef {Object.<string, BehaviorDefFn>} BehaviorDef
  */
 
+const abortController = new AbortController();
+const abortControllerSignal = abortController.signal;
+
+function BehaviorCollection(elements) {
+  elements.forEach((el, i) => {
+    this[i] = el;
+  });
+}
+
+BehaviorCollection.prototype = {
+  forEach:function(func){
+    Object.values(this).forEach(value => {
+      func.call(value, value);
+    });
+  },
+  on:function(type,fn,opt){
+    if (typeof opt === 'boolean' && opt === true) {
+      opt = {
+        passive: true
+      };
+    }
+    const options = {
+      signal: abortController.signal,
+      ...opt
+    };
+    this.forEach(el => {
+      el.removeEventListener(type, fn);
+      el.addEventListener(type, fn, options);
+    });
+    return this;
+  },
+  off:function(type){
+    this.forEach(el => {
+      el.removeEventListener(type, fn);
+    });
+    return this;
+  },
+  /*
+  // Add other methods?
+  addClass:function(className){
+    this.forEach(el => {
+      el.classList.add(className);
+    });
+    return this;
+  },
+  removeClass:function(className){
+    this.forEach(el => {
+      el.classList.remove(className);
+    });
+    return this;
+  },
+  */
+};
+
 /**
  * Behavior constructor
  * @constructor
@@ -191,6 +245,8 @@ function Behavior(node, config = {}) {
   this.__isEnabled = false;
   this.__children = config.children;
   this.__breakpoints = config.breakpoints;
+  this.__abortController = abortController;
+  this.__abortControllerSignal = abortControllerSignal;
 
   // Auto-bind all custom methods to "this"
   this.customMethodNames.forEach(methodName => {
@@ -271,12 +327,12 @@ Behavior.prototype = Object.freeze({
 
     if (typeof this.lifecycle?.resized === 'function') {
       this.__resizedBind = this.__resized.bind(this);
-      window.addEventListener('resized', this.__resizedBind);
+      window.addEventListener('resized', this.__resizedBind, { signal: this.__abortController.signal });
     }
 
     if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
       this.__mediaQueryUpdatedBind = this.__mediaQueryUpdated.bind(this);
-      window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
+      window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind, { signal: this.__abortController.signal });
     }
 
     if (this.options.media) {
@@ -288,6 +344,8 @@ Behavior.prototype = Object.freeze({
     this.__intersections();
   },
   destroy() {
+    this.__abortController.abort();
+
     if (this.__isEnabled === true) {
       this.disable();
     }
@@ -295,14 +353,6 @@ Behavior.prototype = Object.freeze({
     // Behavior-specific lifecycle
     if (typeof this.lifecycle?.destroy === 'function') {
       this.lifecycle.destroy.call(this);
-    }
-
-    if (typeof this.lifecycle.resized === 'function') {
-      window.removeEventListener('resized', this.__resizedBind);
-    }
-
-    if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
-      window.removeEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
     }
 
     if (this.lifecycle.intersectionIn != null || this.lifecycle.intersectionOut != null) {
@@ -370,6 +420,15 @@ Behavior.prototype = Object.freeze({
    */
   isBreakpoint(bp) {
     return isBreakpoint(bp, this.__breakpoints);
+  },
+  collection(selector, context) {
+    let nodes = [];
+    if (selector && typeof selector !== 'string') {
+      nodes = (selector.forEach) ? selector : [selector];
+    } else if (selector) {
+      nodes = this.getChildren(selector, context);
+    }
+    return new BehaviorCollection(nodes);
   },
   __toggleEnabled() {
     const isValidMQ = isBreakpoint(this.options.media, this.__breakpoints);
