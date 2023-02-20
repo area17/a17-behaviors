@@ -61,6 +61,7 @@ function Behavior(node, config = {}) {
   this.__isEnabled = false;
   this.__children = config.children;
   this.__breakpoints = config.breakpoints;
+  this.__abortController = new AbortController();
 
   // Auto-bind all custom methods to "this"
   this.customMethodNames.forEach(methodName => {
@@ -141,12 +142,12 @@ Behavior.prototype = Object.freeze({
 
     if (typeof this.lifecycle?.resized === 'function') {
       this.__resizedBind = this.__resized.bind(this);
-      window.addEventListener('resized', this.__resizedBind);
+      window.addEventListener('resized', this.__resizedBind, { signal: this.__abortController.signal });
     }
 
     if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
       this.__mediaQueryUpdatedBind = this.__mediaQueryUpdated.bind(this);
-      window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
+      window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind, { signal: this.__abortController.signal });
     }
 
     if (this.options.media) {
@@ -158,6 +159,8 @@ Behavior.prototype = Object.freeze({
     this.__intersections();
   },
   destroy() {
+    this.__abortController.abort();
+
     if (this.__isEnabled === true) {
       this.disable();
     }
@@ -165,14 +168,6 @@ Behavior.prototype = Object.freeze({
     // Behavior-specific lifecycle
     if (typeof this.lifecycle?.destroy === 'function') {
       this.lifecycle.destroy.call(this);
-    }
-
-    if (typeof this.lifecycle.resized === 'function') {
-      window.removeEventListener('resized', this.__resizedBind);
-    }
-
-    if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
-      window.removeEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
     }
 
     if (this.lifecycle.intersectionIn != null || this.lifecycle.intersectionOut != null) {
@@ -240,6 +235,58 @@ Behavior.prototype = Object.freeze({
    */
   isBreakpoint(bp) {
     return isBreakpoint(bp, this.__breakpoints);
+  },
+  /**
+   * Attach event listener with signal and auto clean up on destroy
+   * @param {node} els - DOM node to attach to
+   * @param {type} type - Event type
+   * @param {function} fn - Function to run on event
+   * @param {object} opt - event listener options
+   */
+  on(els, type, fn, opt = {}) {
+    if (typeof opt === 'boolean' && opt === true) {
+      opt = {
+        passive: true
+      };
+    }
+    const options = {
+      signal: this.__abortController.signal,
+      ...opt
+    };
+    if (typeof els === 'string') {
+      els = this.getChildren(els);
+    } else if (els instanceof HTMLElement || els === window || els === document) {
+      els = [els];
+    }
+    if (els?.length) {
+      els.forEach(el => {
+        try {
+          el.addEventListener(type, fn, options);
+        } catch (err) {
+          console.log(`${this.name}:on - no DOM node found`, err);
+        }
+      });
+    } else {
+      console.log(`${this.name}:on - no DOM node found`);
+    }
+  },
+  /**
+   * Manual un-attach event listener
+   * @param {node} el - DOM node to attached to
+   * @param {type} type - Event type
+   * @param {function} fn - Function that runs on event
+   */
+  off(els, type, fn) {
+    if (typeof els === 'string') {
+      els = this.getChildren(els);
+    } else if (els instanceof HTMLElement) {
+      els = [els];
+    }
+    els.forEach(el => {
+      try {
+        el.removeEventListener(type, fn);
+      } catch(err) {}
+    });
   },
   __toggleEnabled() {
     const isValidMQ = isBreakpoint(this.options.media, this.__breakpoints);
