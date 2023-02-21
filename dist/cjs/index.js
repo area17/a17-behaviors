@@ -440,14 +440,6 @@ Behavior.prototype = Object.freeze({
         fn: fn,
       };
       el.addEventListener(type, fn, options);
-      /*
-      el.on = (t, f, o) => {
-        this.__on(el, t, f, o);
-      };
-      el.off = (t, f) => {
-        this.__off(el, t, f);
-      };
-      */
     }
   },
   __off(el, type, fn) {
