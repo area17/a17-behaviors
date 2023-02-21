@@ -226,19 +226,19 @@ Behavior.prototype = Object.freeze({
       };
       // and apply to the individual nodes within
       selection.forEach(el => {
-        el.on = (type, fn, opt) => {
+        el.on = el.on ? el.on : (type, fn, opt) => {
           this.__on(el, type, fn, opt);
         };
-        el.off = (type, fn) => {
+        el.off = el.off ? el.off : (type, fn) => {
           this.__off(el, type, fn);
         };
       });
     } else {
       // apply on/off methods to the singular selected node
-      selection.on = (type, fn, opt) => {
+      selection.on = selection.on ? selection.on : (type, fn, opt) => {
         this.__on(selection, type, fn, opt);
       };
-      selection.off = (type, fn) => {
+      selection.off = selection.off ? selection.off : (type, fn) => {
         this.__off(selection, type, fn);
       };
     }
