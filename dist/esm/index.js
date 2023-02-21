@@ -169,60 +169,6 @@ var purgeProperties = function(obj) {
  * @typedef {Object.<string, BehaviorDefFn>} BehaviorDef
  */
 
-const abortController = new AbortController();
-const abortControllerSignal = abortController.signal;
-
-function BehaviorCollection(elements) {
-  elements.forEach((el, i) => {
-    this[i] = el;
-  });
-}
-
-BehaviorCollection.prototype = {
-  forEach:function(func){
-    Object.values(this).forEach(value => {
-      func.call(value, value);
-    });
-  },
-  on:function(type,fn,opt){
-    if (typeof opt === 'boolean' && opt === true) {
-      opt = {
-        passive: true
-      };
-    }
-    const options = {
-      signal: abortController.signal,
-      ...opt
-    };
-    this.forEach(el => {
-      el.removeEventListener(type, fn);
-      el.addEventListener(type, fn, options);
-    });
-    return this;
-  },
-  off:function(type){
-    this.forEach(el => {
-      el.removeEventListener(type, fn);
-    });
-    return this;
-  },
-  /*
-  // Add other methods?
-  addClass:function(className){
-    this.forEach(el => {
-      el.classList.add(className);
-    });
-    return this;
-  },
-  removeClass:function(className){
-    this.forEach(el => {
-      el.classList.remove(className);
-    });
-    return this;
-  },
-  */
-};
-
 /**
  * Behavior constructor
  * @constructor
@@ -245,8 +191,7 @@ function Behavior(node, config = {}) {
   this.__isEnabled = false;
   this.__children = config.children;
   this.__breakpoints = config.breakpoints;
-  this.__abortController = abortController;
-  this.__abortControllerSignal = abortControllerSignal;
+  this.__abortController = new AbortController();
 
   // Auto-bind all custom methods to "this"
   this.customMethodNames.forEach(methodName => {
@@ -369,16 +314,67 @@ Behavior.prototype = Object.freeze({
    * @param {boolean} multi - Define usage between querySelectorAll and querySelector
    * @returns {HTMLElement|null}
    */
-  getChild(childName, context, multi = false) {
-    if (context == null) {
-      context = this.$node;
+  getChild(selector, context, multi = false) {
+      // lets make a selection
+    let selection;
+    //
+    if (this.__children != null && this.__children[selector] != null) {
+      // if the selector matches a pre-selected set, set to that set
+      // TODO: confirm what this is and its usage
+      selection = this.__children[selector];
+    } else if (selector instanceof NodeList) {
+      // if a node list has been passed, use it
+      selection = selector;
+      multi = true;
+    } else if (selector instanceof Element || selector instanceof HTMLDocument || selector === window) {
+      // if a single node, the document or the window is passed, set to that
+      selection = selector;
+      multi = false;
+    } else {
+      // else, lets find named children within the container
+      if (context == null) {
+        // set a default context of the container node
+        context = this.$node;
+      }
+      // find
+      selection = context[multi ? 'querySelectorAll' : 'querySelector'](
+        '[data-' + this.name.toLowerCase() + '-' + selector.toLowerCase() + ']'
+      );
     }
-    if (this.__children != null && this.__children[childName] != null) {
-      return this.__children[childName];
+
+    if (multi) {
+      // apply on/off methods to the selected DOM node list
+      selection.on = (type, fn, opt) => {
+        selection.forEach(el => {
+          this.__on(el, type, fn, opt);
+        });
+      };
+      selection.off = (type, fn) => {
+        selection.forEach(el => {
+          this.__off(el, type, fn);
+        });
+      };
+      // and apply to the individual nodes within
+      selection.forEach(el => {
+        el.on = (type, fn, opt) => {
+          this.__on(el, type, fn, opt);
+        };
+        el.off = (type, fn) => {
+          this.__off(el, type, fn);
+        };
+      });
+    } else {
+      // apply on/off methods to the singular selected node
+      selection.on = (type, fn, opt) => {
+        this.__on(selection, type, fn, opt);
+      };
+      selection.off = (type, fn) => {
+        this.__off(selection, type, fn);
+      };
     }
-    return context[multi ? 'querySelectorAll' : 'querySelector'](
-      '[data-' + this.name.toLowerCase() + '-' + childName.toLowerCase() + ']'
-    );
+
+    // return to variable assignment
+    return selection;
   },
   /**
    * Look for children of the behavior: data-behaviorName-childName
@@ -421,14 +417,53 @@ Behavior.prototype = Object.freeze({
   isBreakpoint(bp) {
     return isBreakpoint(bp, this.__breakpoints);
   },
-  collection(selector, context) {
-    let nodes = [];
-    if (selector && typeof selector !== 'string') {
-      nodes = (selector.forEach) ? selector : [selector];
-    } else if (selector) {
-      nodes = this.getChildren(selector, context);
+  __on(el, type, fn, opt) {
+    if (typeof opt === 'boolean' && opt === true) {
+      opt = {
+        passive: true
+      };
     }
-    return new BehaviorCollection(nodes);
+    const options = {
+      signal: this.__abortController.signal,
+      ...opt
+    };
+    if (!el.attachedListeners) {
+      el.attachedListeners = {};
+    }
+    // check if el already has this listener
+    let found = Object.values(el.attachedListeners).find(listener => listener.type === type && listener.fn === fn);
+    if (!found) {
+      el.attachedListeners[Object.values(el.attachedListeners).length] = {
+        type: type,
+        fn: fn,
+      };
+      el.addEventListener(type, fn, options);
+      /*
+      el.on = (t, f, o) => {
+        this.__on(el, t, f, o);
+      };
+      el.off = (t, f) => {
+        this.__off(el, t, f);
+      };
+      */
+    }
+  },
+  __off(el, type, fn) {
+    if (el.attachedListeners) {
+      Object.keys(el.attachedListeners).forEach(key => {
+        const thisListener = el.attachedListeners[key];
+        if (
+          (!type && !fn) || // off()
+          (type === thisListener.type && !fn) || // match type with no fn
+          (type === thisListener.type && fn === thisListener.fn) // match both type and fn
+        ) {
+          delete el.attachedListeners[key];
+          el.removeEventListener(thisListener.type, thisListener.fn);
+        }
+      });
+    } else {
+      el.removeEventListener(type, fn);
+    }
   },
   __toggleEnabled() {
     const isValidMQ = isBreakpoint(this.options.media, this.__breakpoints);
