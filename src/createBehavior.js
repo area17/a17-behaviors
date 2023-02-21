@@ -49,11 +49,6 @@ function BehaviorCollection(elements) {
 }
 
 BehaviorCollection.prototype = {
-  forEach:function(func){
-    Object.values(this).forEach(value => {
-      func.call(value, value);
-    })
-  },
   on:function(type,fn,opt){
     if (typeof opt === 'boolean' && opt === true) {
       opt = {
@@ -64,33 +59,51 @@ BehaviorCollection.prototype = {
       signal: abortController.signal,
       ...opt
     };
-    this.forEach(el => {
-      el.removeEventListener(type, fn);
-      el.addEventListener(type, fn, options);
+    Object.values(this).forEach(el => {
+      if (!el.attachedListeners) {
+        el.attachedListeners = {};
+      }
+      // check if el already has this listener
+      let found = Object.values(el.attachedListeners).find(listener => listener.type === type && listener.fn === fn);
+      if (!found) {
+        el.attachedListeners[Object.values(el.attachedListeners).length] = {
+          type: type,
+          fn: fn,
+        };
+        el.addEventListener(type, fn, options);
+      }
     });
     return this;
   },
-  off:function(type){
-    this.forEach(el => {
-      el.removeEventListener(type, fn);
+  off:function(type, fn){
+    Object.values(this).forEach(el => {
+      if (el.attachedListeners) {
+        Object.keys(el.attachedListeners).forEach(key => {
+          const thisListener = el.attachedListeners[key];
+          if (
+            (!type && !fn) || // off()
+            (type === thisListener.type && !fn) || // match type with no fn
+            (type === thisListener.type && fn === thisListener.fn) // match both type and fn
+          ) {
+            delete el.attachedListeners[key];
+            el.removeEventListener(thisListener.type, thisListener.fn);
+          }
+        });
+      } else {
+        el.removeEventListener(type, fn);
+      }
     });
     return this;
   },
-  /*
-  // Add other methods?
-  addClass:function(className){
-    this.forEach(el => {
-      el.classList.add(className);
+  indexOf:function(needle){
+    // possibly remove, easy enough to add your own?
+    let index = -1;
+    Object.values(this).some((el, i) => {
+      index = (el === needle) ? i : index;
+      return index > -1;
     });
-    return this;
-  },
-  removeClass:function(className){
-    this.forEach(el => {
-      el.classList.remove(className);
-    });
-    return this;
-  },
-  */
+    return index;
+  }
 };
 
 /**
