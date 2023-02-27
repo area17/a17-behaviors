@@ -11,27 +11,8 @@ import createBehavior from './createBehavior';
  * NB: methods or lifestyle fns with the same name will overwrite originals
  */
 function extendBehavior(behavior, name, methods = {}, lifecycle = {}) {
-  const newMethods = {};
-  let methodsKeys = Object.keys(behavior.prototype.methods);
-  methodsKeys.forEach(key => {
-    newMethods[key] = behavior.prototype.methods[key];
-  });
-
-  methodsKeys = Object.keys(methods);
-  methodsKeys.forEach(key => {
-    newMethods[key] = methods[key];
-  });
-
-  const newLifecycle = {};
-  let lifecycleKeys = Object.keys(behavior.prototype.lifecycle);
-  lifecycleKeys.forEach(key => {
-    newLifecycle[key] = behavior.prototype.lifecycle[key];
-  });
-
-  lifecycleKeys = Object.keys(lifecycle);
-  lifecycleKeys.forEach(key => {
-    newLifecycle[key] = lifecycle[key];
-  });
+  const newMethods = Object.assign(Object.assign({}, behavior.prototype.methods), methods);
+  const newLifecycle = Object.assign(Object.assign({}, behavior.prototype.lifecycle), lifecycle);
 
   return createBehavior(name, newMethods, newLifecycle);
 }
