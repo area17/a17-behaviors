@@ -65,7 +65,7 @@ function Behavior(node, config = {}) {
 
   // Auto-bind all custom methods to "this"
   this.customMethodNames.forEach(methodName => {
-    this[methodName] = this[methodName].bind(this);
+    this[methodName] = this.methods[methodName].bind(this);
   });
 
   this._binds = {};
@@ -383,11 +383,11 @@ Behavior.prototype = Object.freeze({
 /**
  * Create a behavior instance
  * @param {string} name - Name of the behavior used for declaration: data-behavior="name"
- * @param {BehaviorDef} def - define methods of the behavior
- * @param {Lifecycle} lifecycle - Register behavior lifecycle
+ * @param {object} methods - define methods of the behavior
+ * @param {object} lifecycle - Register behavior lifecycle
  * @returns {Behavior}
  */
-const createBehavior = (name, def, lifecycle = {}) => {
+const createBehavior = (name, methods = {}, lifecycle = {}) => {
   /**
    *
    * @param args
@@ -411,22 +411,22 @@ const createBehavior = (name, def, lifecycle = {}) => {
     lifecycle: {
       value: lifecycle,
     },
+    methods: {
+      value: methods,
+    },
     customMethodNames: {
       value: customMethodNames,
     },
   };
 
   // Expose the definition properties as 'this[methodName]'
-  const defKeys = Object.keys(def);
-  defKeys.forEach(key => {
+  const methodsKeys = Object.keys(methods);
+  methodsKeys.forEach(key => {
     customMethodNames.push(key);
-    customProperties[key] = {
-      value: def[key],
-      writable: true,
-    };
   });
 
   fn.prototype = Object.create(Behavior.prototype, customProperties);
+
   return fn;
 };
 
