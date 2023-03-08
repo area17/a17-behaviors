@@ -274,12 +274,12 @@ Behavior.prototype = Object.freeze({
 
     if (typeof this.lifecycle?.resized === 'function') {
       this.__resizedBind = this.__resized.bind(this);
-      window.addEventListener('resized', this.__resizedBind, { signal: this.__abortController.signal });
+      window.addEventListener('resized', this.__resizedBind);
     }
 
     if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
       this.__mediaQueryUpdatedBind = this.__mediaQueryUpdated.bind(this);
-      window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind, { signal: this.__abortController.signal });
+      window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
     }
 
     if (this.options.media) {
@@ -301,6 +301,14 @@ Behavior.prototype = Object.freeze({
     if (typeof this.lifecycle?.destroy === 'function') {
       this.lifecycle.destroy.call(this);
     }
+
+    if (typeof this.lifecycle.resized === 'function') {
+       window.removeEventListener('resized', this.__resizedBind);
+     }
+
+     if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
+       window.removeEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
+     }
 
     if (this.lifecycle.intersectionIn != null || this.lifecycle.intersectionOut != null) {
       this.__intersectionObserver.unobserve(this.$node);
