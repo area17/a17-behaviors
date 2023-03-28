@@ -352,7 +352,7 @@ Behavior.prototype = Object.freeze({
       );
     }
 
-    if (multi) {
+    if (multi && selection?.length > 0) {
       // apply on/off methods to the selected DOM node list
       selection.on = (type, fn, opt) => {
         selection.forEach(el => {
@@ -373,7 +373,7 @@ Behavior.prototype = Object.freeze({
           this.__off(el, type, fn);
         };
       });
-    } else {
+    } else if(selection) {
       // apply on/off methods to the singular selected node
       selection.on = selection.on ? selection.on : (type, fn, opt) => {
         this.__on(selection, type, fn, opt);
