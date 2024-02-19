@@ -1,13 +1,22 @@
 'use strict';
 
-var getCurrentMediaQuery = function() {
-  // Doc: https://github.com/area17/a17-behaviors/wiki/getCurrentMediaQuery
-
+/**
+ * getCurrentMediaQuery : Returns the current media query in use by reading a CSS :root variable. Useful for running JS functions at certain breakpoints without holding breakpoint size information in CSS and JS.
+ *
+ * @returns {string} Media query string
+ */
+const getCurrentMediaQuery = function() {
+  // Doc: https://github.com/area17/js-helpers/wiki/getCurrentMediaQuery
+  if(typeof window === 'undefined') return '';
   return getComputedStyle(document.documentElement).getPropertyValue('--breakpoint').trim().replace(/"/g, '');
 };
 
-var resized = function() {
-  // Doc: https://github.com/area17/a17-behaviors/wiki/resized
+/**
+ * resized : Debounces window resize, also checks if current media query has changed
+ * @example document.addEventListener('resized', function(event) { console.log(event.detail.breakpoint); });
+*/
+const resized = function() {
+  // Doc: https://github.com/area17/js-helpers/wiki/resized
 
   var resizeTimer;
   var resizedDelay = 250;
@@ -75,8 +84,15 @@ var resized = function() {
   }
 };
 
+/**
+ * isBreakpoint : Checks if the current breakpoint matches the passed breakpoint. It supports querying with or without +/- modifiers.
+ *
+ * @param {string} breakpoint The breakpoint to check against
+ * @param {string[]} [breakpoints] Array of breakpoint names to test against
+ * @returns {boolean} Returns true if the breakpoint matches, false if not
+ */
 const isBreakpoint = function (breakpoint, breakpoints) {
-  // Doc: https://github.com/area17/a17-behaviors/wiki/isBreakpoint
+  // Doc: https://github.com/area17/js-helpers/wiki/isBreakpoint
 
   // bail if no breakpoint is passed
   if (!breakpoint) {
@@ -148,8 +164,11 @@ const isBreakpoint = function (breakpoint, breakpoints) {
   return false
 };
 
-var purgeProperties = function(obj) {
-  // Doc: https://github.com/area17/a17-behaviors/wiki/purgeProperties
+/**
+ * Removes all properties from an object, useful in cleaning up when destroying a method
+*/
+const purgeProperties = function(obj) {
+  // Doc: https://github.com/area17/js-helpers/wiki/purgeProperties
   for (var prop in obj) {
     if (obj.hasOwnProperty(prop)) {
       delete obj[prop];
@@ -997,7 +1016,7 @@ function initBehavior(bName, bNode, config = {}) {
   // now check that this behavior isn't already
   // running on this node
   const nodeBehaviors = activeBehaviors.get(bNode) || {};
-  if (nodeBehaviors === {} || !nodeBehaviors[bName]) {
+  if (Object.keys(nodeBehaviors).length === 0 || !nodeBehaviors[bName]) {
     const instance = new loadedBehaviors[bName](bNode, config);
     // update internal store of whats running
     nodeBehaviors[bName] = instance;

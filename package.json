@@ -1,6 +1,6 @@
 {
   "name": "@area17/a17-behaviors",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "JavaScript framework to attach JavaScript events and interactions to DOM Nodes",
   "type": "module",
   "scripts": {
@@ -24,10 +24,10 @@
     "url": "https://github.com/area17/a17-behaviors/issues"
   },
   "dependencies": {
-    "@area17/a17-helpers": "^3.2.2"
+    "@area17/a17-helpers": "^3.3.1"
   },
   "devDependencies": {
-    "rollup": "^4.9.5",
+    "rollup": "^4.12.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-commonjs": "^25.0.7"
   }

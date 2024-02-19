@@ -413,7 +413,7 @@ function initBehavior(bName, bNode, config = {}) {
   // now check that this behavior isn't already
   // running on this node
   const nodeBehaviors = activeBehaviors.get(bNode) || {};
-  if (nodeBehaviors === {} || !nodeBehaviors[bName]) {
+  if (Object.keys(nodeBehaviors).length === 0 || !nodeBehaviors[bName]) {
     const instance = new loadedBehaviors[bName](bNode, config);
     // update internal store of whats running
     nodeBehaviors[bName] = instance;
