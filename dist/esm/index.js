@@ -749,25 +749,25 @@ function importBehavior(bName, bNode) {
   // push to our store of loaded behaviors
   loadedBehaviorNames.push(bName);
   // import
-  // webpack interprets this, does some magic
-  // process.env variables set in webpack config
+  // webpack/vite interprets this, does some magic
+  // process.env variables set in webpack/vite config
   try {
     import(
       /**
-       * Vite bundler rises a warning because import url start with a variable
-       * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
-       * Warning will be hidden with the below directive vite-ignore
+       * Vite bundler requires a known start point for imports
+       * Fortunately it can use a defined alias in the config
+       * Webkit uses aliases differently and continues on to the
+       * imports below (but may throw build warnings attempting this)
        */
-      /* @vite-ignore */
-      `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+      `@/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
     ).then(module => {
       behaviorImported(bName, bNode, module);
     }).catch(err => {
-      console.warn(`No loaded behavior called: ${bName}`);
+      console.warn(`No loaded behavior: ${bName}`);
       // fail, clean up
       importFailed(bName);
     });
-  } catch(err1) {
+  } catch(errV) {
     try {
       import(
         /**
@@ -776,18 +776,36 @@ function importBehavior(bName, bNode) {
          * Warning will be hidden with the below directive vite-ignore
          */
         /* @vite-ignore */
-        `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+        `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
       ).then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
-        console.warn(`No loaded behavior called: ${bName}`);
+        console.warn(`No loaded behavior: ${bName}`);
         // fail, clean up
         importFailed(bName);
       });
-    } catch(err2) {
-      console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
-      // fail, clean up
-      importFailed(bName);
+    } catch(errW1) {
+      try {
+        import(
+          /**
+           * Vite bundler rises a warning because import url start with a variable
+           * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
+           * Warning will be hidden with the below directive vite-ignore
+           */
+          /* @vite-ignore */
+          `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+        ).then(module => {
+          behaviorImported(bName, bNode, module);
+        }).catch(err => {
+          console.warn(`No loaded behavior: ${bName}`);
+          // fail, clean up
+          importFailed(bName);
+        });
+      } catch(errW2) {
+        console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Webpack/Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack/Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
+        // fail, clean up
+        importFailed(bName);
+      }
     }
   }
 }
