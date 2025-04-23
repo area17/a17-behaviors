@@ -751,23 +751,28 @@ function importBehavior(bName, bNode) {
   // import
   // webpack/vite interprets this, does some magic
   // process.env variables set in webpack/vite config
-  try {
-    import(
+  if (process.env.BUILD === 'vite') {
+    try {
       /**
        * Vite bundler requires a known start point for imports
        * Fortunately it can use a defined alias in the config
        * Webkit uses aliases differently and continues on to the
        * imports below (but may throw build warnings attempting this)
        */
-      `@/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
-    ).then(module => {
-      behaviorImported(bName, bNode, module);
-    }).catch(err => {
-      console.warn(`No loaded behavior: ${bName}`);
+      const behaviorPath = `@/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`;
+      import(behaviorPath).then(module => {
+        behaviorImported(bName, bNode, module);
+      }).catch(err => {
+        console.warn(`No loaded behavior: ${bName} (${process.env.BUILD}:0)`);
+        // fail, clean up
+        importFailed(bName);
+      });
+    } catch(errV) {
+      console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Webpack/Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack/Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
       // fail, clean up
       importFailed(bName);
-    });
-  } catch(errV) {
+    }
+  } else {
     try {
       import(
         /**
@@ -780,7 +785,7 @@ function importBehavior(bName, bNode) {
       ).then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
-        console.warn(`No loaded behavior: ${bName}`);
+        console.warn(`No loaded behavior: ${bName} (${process.env.BUILD}:1)`);
         // fail, clean up
         importFailed(bName);
       });
@@ -797,7 +802,7 @@ function importBehavior(bName, bNode) {
         ).then(module => {
           behaviorImported(bName, bNode, module);
         }).catch(err => {
-          console.warn(`No loaded behavior: ${bName}`);
+          console.warn(`No loaded behavior: ${bName} (${process.env.BUILD}:2)`);
           // fail, clean up
           importFailed(bName);
         });
