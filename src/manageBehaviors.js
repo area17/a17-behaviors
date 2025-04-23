@@ -150,6 +150,7 @@ function importBehavior(bName, bNode) {
   // import
   // webpack/vite interprets this, does some magic
   // process.env variables set in webpack/vite config
+  console.log(`Resolved behavior path: @/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION} (${process.env.BUILD})`);
   if (process.env.BUILD === 'vite') {
     try {
       /**
