@@ -158,11 +158,15 @@ function importBehavior(bName, bNode) {
        * we need to pass a vite import in the app.js - options.lazyBehaviors
        * and then we look for the import in the globbed lazyBehaviors
        * if exists, run it
+       *
+       * NB: using vite glob from app.js as vite glob import only allows literal strings
+       * and does not allow variables to be passed to it
+       * see: https://vite.dev/guide/features#glob-import
        */
       options.lazyBehaviors[process.env.BEHAVIORS_COMPONENT_PATHS[bName]]().then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
-        console.warn(`No loaded behavior: ${bName}`);
+        console.warn(`Behavior '${bName}' load failed - possible error with the behavior or a malformed module`);
         // fail, clean up
         importFailed(bName);
       });
@@ -177,12 +181,12 @@ function importBehavior(bName, bNode) {
         import(`@/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`).then(module => {
           behaviorImported(bName, bNode, module);
         }).catch(err => {
-          console.warn(`No loaded behavior: ${bName}`);
+          console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
           // fail, clean up
           importFailed(bName);
         });
       } catch(errV2) {
-        console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
+        console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
         // fail, clean up
         importFailed(bName);
       }
@@ -217,12 +221,12 @@ function importBehavior(bName, bNode) {
         ).then(module => {
           behaviorImported(bName, bNode, module);
         }).catch(err => {
-          console.warn(`No loaded behavior: ${bName}`);
+          console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
           // fail, clean up
           importFailed(bName);
         });
       } catch(errW2) {
-        console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
+        console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
         // fail, clean up
         importFailed(bName);
       }
