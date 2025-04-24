@@ -9,7 +9,8 @@ let options = {
   intersectionOptions: {
     rootMargin: '20%',
   },
-  breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl']
+  breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'],
+  lazyBehaviors: {},
 };
 
 let loadedBehaviorNames = [];
@@ -153,31 +154,38 @@ function importBehavior(bName, bNode) {
   if (process.env.BUILD === 'vite') {
     try {
       /**
-       * Vite bundler requires a known start point for imports
-       * Fortunately it can use a defined alias in the config
-       * Webkit uses aliases differently and continues on to the
-       * imports below (but may throw build warnings attempting this)
-       *
-       * Vite will glob the files in the BEHAVIORS_PATH - eg: behaviors/*.js
-       * But it can't/won't glob folders - so components/foo/foo.js isn't possible
-       *
-       * And we can't use Vite's glob imports as the pattern must be a literal
-       * string, it cannot be dynamic or pulled from variables (such as process.env)
-       *
-       * see: https://vite.dev/guide/features#dynamic-import
-       * see: https://vite.dev/guide/features#glob-import
+       * For BEHAVIORS_COMPONENT_PATHS usage,
+       * we need to pass a vite import in the app.js - options.lazyBehaviors
+       * and then we look for the import in the globbed lazyBehaviors
+       * if exists, run it
        */
-      import(`@/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`).then(module => {
+      options.lazyBehaviors[process.env.BEHAVIORS_COMPONENT_PATHS[bName]]().then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
         console.warn(`No loaded behavior: ${bName}`);
         // fail, clean up
         importFailed(bName);
       });
-    } catch(errV) {
-      console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
-      // fail, clean up
-      importFailed(bName);
+    } catch(errV1) {
+      try {
+        /**
+         * Vite bundler requires a known start point for imports
+         * Fortunately it can use a defined alias in the config
+         * Webkit uses aliases differently and continues on to the
+         * imports below (but may throw build warnings attempting this)
+         */
+        import(`@/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`).then(module => {
+          behaviorImported(bName, bNode, module);
+        }).catch(err => {
+          console.warn(`No loaded behavior: ${bName}`);
+          // fail, clean up
+          importFailed(bName);
+        });
+      } catch(errV2) {
+        console.warn(`Unknown behavior called: ${bName}. \nIt maybe the behavior doesn't exist, check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
+        // fail, clean up
+        importFailed(bName);
+      }
     }
   } else {
     try {
