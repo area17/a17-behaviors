@@ -781,7 +781,7 @@ function importBehavior(bName, bNode) {
          * Webkit uses aliases differently and continues on to the
          * imports below (but may throw build warnings attempting this)
          */
-        import(`@/${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`).then(module => {
+        options.lazyBehaviors[`${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`]().then(module => {
           behaviorImported(bName, bNode, module);
         }).catch(err => {
           console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
