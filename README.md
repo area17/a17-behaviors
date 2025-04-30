@@ -4,8 +4,6 @@ A17 Behaviors is a lightweight JavaScript framework designed to seamlessly attac
 
 Clearly showing an element's associated behaviors enhances discoverability. Instead of searching through lengthy JavaScript files or guessing which scripts are attached to which DOM nodes, with clearly delcared behaviors you can quickly identify the relevant code and streamline your development process.
 
-[Wiki](https://github.com/area17/a17-behaviors/wiki)
-
 ## Key Features
 
 - Declarative Binding: Attach behaviors directly in HTML using `data-behavior` attributes.
