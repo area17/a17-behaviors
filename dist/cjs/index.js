@@ -796,12 +796,22 @@ function importBehavior(bName, bNode) {
     }
   } else {
     try {
+      /**
+       * If process.env.BUILD not set to 'vite' but Vite is being used it will fail to import
+       * because Vite bundler rises a warning because import url start with a variable
+       * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
+       * Warning will be hidden with the below directive vite-ignore
+       *
+       * If you're inspecting how these dynamic import work with Webpack, you may wonder why
+       * we don't just send full paths through in `process.env.BEHAVIORS_COMPONENT_PATHS`
+       * such as `component: '/components/component/component.js',`
+       * instead of building a path from `process.env.BEHAVIORS_PATH` and `process.env.BEHAVIORS_COMPONENT_PATHS[bName]`
+       * - and that would be a good question...
+       * It seems we need to construct the path this way to let Webpack peek into the directory to map it out.
+       * Then Webpack doesn't like building if you include the JS filename and file extension
+       * and I have no idea why...
+       */
       import(
-        /**
-         * Vite bundler rises a warning because import url start with a variable
-         * @see: https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations
-         * Warning will be hidden with the below directive vite-ignore
-         */
         /* @vite-ignore */
         `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
       ).then(module => {
