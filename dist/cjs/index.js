@@ -613,7 +613,7 @@ let options = {
     rootMargin: '20%',
   },
   breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'],
-  lazyBehaviors: {},
+  dynamicBehaviors: {},
 };
 
 let loadedBehaviorNames = [];
@@ -758,15 +758,15 @@ function importBehavior(bName, bNode) {
     try {
       /**
        * For BEHAVIORS_COMPONENT_PATHS usage,
-       * we need to pass a vite import in the app.js - options.lazyBehaviors
-       * and then we look for the import in the globbed lazyBehaviors
+       * we need to pass a vite import in the app.js - options.dynamicBehaviors
+       * and then we look for the import in the globbed dynamicBehaviors
        * if exists, run it
        *
        * NB: using vite glob from app.js as vite glob import only allows literal strings
        * and does not allow variables to be passed to it
        * see: https://vite.dev/guide/features#glob-import
        */
-      options.lazyBehaviors[process.env.BEHAVIORS_COMPONENT_PATHS[bName]]().then(module => {
+      options.dynamicBehaviors[process.env.BEHAVIORS_COMPONENT_PATHS[bName]]().then(module => {
         behaviorImported(bName, bNode, module);
       }).catch(err => {
         console.warn(`Behavior '${bName}' load failed - possible error with the behavior or a malformed module`);
@@ -781,7 +781,7 @@ function importBehavior(bName, bNode) {
          * Webkit uses aliases differently and continues on to the
          * imports below (but may throw build warnings attempting this)
          */
-        options.lazyBehaviors[`${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`]().then(module => {
+        options.dynamicBehaviors[`${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`]().then(module => {
           behaviorImported(bName, bNode, module);
         }).catch(err => {
           console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
