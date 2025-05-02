@@ -2,16 +2,21 @@
 
 &nbsp;
 
-A17 Behaviors is a lightweight JavaScript framework designed to seamlessly attach behaviors - such as interactions, event listeners, and manipulations - to DOM nodes using declarative `data-behavior` attributes. This approach promotes modularity, code clarity, and maintainability in your front-end development.
+A17 Behaviors is a lightweight JavaScript framework designed to seamlessly attach behaviors — such as interactions, event listeners, and manipulations — to DOM nodes using declarative `data-behavior` attributes. This approach promotes modularity, code clarity, and maintainability in your front-end development.
 
-Clearly showing an element's associated behaviors enhances discoverability. Instead of searching through lengthy JavaScript files or guessing which scripts are attached to which DOM nodes, with clearly delcared behaviors you can quickly identify the relevant code and streamline your development process.
+Clearly showing an element's associated behaviors enhances discoverability. Instead of searching through lengthy JavaScript files or guessing which scripts are attached to which DOM nodes, declared behaviors let you quickly identify the relevant code and streamline your development process.
 
 ## Key Features
 
-- Declarative Binding: Attach behaviors directly in HTML using `data-behavior` attributes.
-- Modular Architecture: Encourages separation of concerns by isolating behavior logic.
-- Dynamic Behavior Management: Automatically initializes and destroys behaviors as DOM nodes are added or removed.
-- Extensibility: Easily extend existing behaviors with additional methods.
+- Declarative binding via `data-behavior`
+- Lazy initialization with `data-behavior-lazy` when elements enter the viewport
+- Optional dynamic behavior loading (via Vite or Webpack)
+- Modular architecture that separates behavior logic
+- Automatic init/destroy of behaviors for dynamic DOM changes
+- Lifecycle events: `init`, `resized`, `enabled`, `mediaQueryUpdated`, `intersectionIn`, `intersectionOut`, `disabled` and `destroy`
+- Easily extend existing behaviors with `extendBehavior`
+- Built to be fast: written in vanilla JavaScript
+- Tiny filesize: 14kb minified / 4kb gzipped
 
 ## Installation
 
@@ -23,7 +28,7 @@ npm install @area17/a17-behaviors
 
 ## Usage Example
 
-```HTML
+```html
 <button data-behavior="showAlert">Click me</button>
 ```
 
@@ -66,11 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 In this example, clicking the button will trigger an alert saying "Hello world!".
 
-## How it works
+## How It Works
 
-- `createBehavior` - Defines a new behavior
-- `manageBehaviors` - Observes the DOM and initializes/destroys behaviors as needed
-- `extendBehavior` - Extends an existing behavior with new methods
+`manageBehaviors` uses `MutationObserver`, `IntersectionObserver`, and a debounced `resize` listener to track DOM changes. It detects when elements are added, removed, or enter/exit the viewport and triggers lifecycle methods on attached behaviors.
+
+`createBehavior` defines a behavior, giving you a logical structure with clearly scoped methods and lifecycle hooks tied to specific DOM nodes.
+
+`extendBehavior` lets you create variations of an existing behavior by overriding or adding properties and methods.
 
 ## Wiki
 
@@ -80,6 +87,10 @@ See the [Wiki](https://github.com/area17/a17-behaviors/wiki) for:
 - Advanced usage (dynamic content, lazy-loading behaviors)
 - FAQ and troubleshooting
 - Best practices
+
+## Browser Support
+
+Usage of `MutationObserver` and `IntersectionObserver` requires support of browsers from 2019 onwards.
 
 ## License
 
