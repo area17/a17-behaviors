@@ -1,4 +1,4 @@
-![Alt text](logo.png?raw=true "A17 Behaviors")
+![A17 Behaviors](logo.png?raw=true "A17 Behaviors")
 
 &nbsp;
 
@@ -60,11 +60,11 @@ And managed from a central `application.js`:
 
 ```JavaScript
 import { manageBehaviors } from '@area17/a17-behaviors';
-import * as Behaviors from './behaviors/index';
+import showAlert from './behaviors/showAlert';
 
 document.addEventListener('DOMContentLoaded', () => {
-    manageBehaviors.init(Behaviors, {
-        breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'],
+    manageBehaviors.init({
+        showAlert
     });
 });
 ```
