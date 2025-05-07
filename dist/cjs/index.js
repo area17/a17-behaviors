@@ -227,7 +227,7 @@ function Behavior(node, config = {}) {
     throw new Error('Node argument is required');
   }
 
-  this.$node = node;
+  this.$node = this.getChild(node);
   this.options = Object.assign({
     intersectionOptions: {
       rootMargin: '20%',
