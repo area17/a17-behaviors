@@ -222,15 +222,21 @@ const purgeProperties = function(obj) {
  */
 function Behavior(node, config = {}) {
   if (!node || !(node instanceof Element)) {
-    throw new Error('Node argument is required');
+    throw new Error("Node argument is required");
   }
 
+  this.__debugEnabled = config.debugEnabled || this.debugEnabled || false;
+
+  this.debug("constructor()", { node, config });
   this.$node = this.getChild(node);
-  this.options = Object.assign({
-    intersectionOptions: {
-      rootMargin: '20%',
-    }
-  }, config.options || {});
+  this.options = Object.assign(
+    {
+      intersectionOptions: {
+        rootMargin: "20%",
+      },
+    },
+    config.options || {}
+  );
 
   this.__isEnabled = false;
   this.__children = config.children;
@@ -238,17 +244,17 @@ function Behavior(node, config = {}) {
   this.__abortController = new AbortController();
 
   // Auto-bind all custom methods to "this"
-  this.customMethodNames.forEach(methodName => {
+  this.customMethodNames.forEach((methodName) => {
     this[methodName] = this.methods[methodName].bind(this);
   });
 
   this._binds = {};
   this._data = new Proxy(this._binds, {
-      set: (target, key, value) => {
-          this.updateBinds(key, value);
-          target[key] = value;
-          return true;
-      }
+    set: (target, key, value) => {
+      this.updateBinds(key, value);
+      target[key] = value;
+      return true;
+    },
   });
 
   this.__isIntersecting = false;
@@ -263,36 +269,42 @@ function Behavior(node, config = {}) {
  */
 Behavior.prototype = Object.freeze({
   updateBinds(key, value) {
-      // TODO: cache these before hand?
-      const targetEls = this.$node.querySelectorAll('[data-' + this.name.toLowerCase() + '-bindel*=' + key + ']');
-      targetEls.forEach((target) => {
-          target.innerHTML = value;
+    // TODO: cache these before hand?
+    const targetEls = this.$node.querySelectorAll(
+      "[data-" + this.name.toLowerCase() + "-bindel*=" + key + "]"
+    );
+    targetEls.forEach((target) => {
+      target.innerHTML = value;
+    });
+    // TODO: cache these before hand?
+    const targetAttrs = this.$node.querySelectorAll(
+      "[data-" + this.name.toLowerCase() + '-bindattr*="' + key + ':"]'
+    );
+    targetAttrs.forEach((target) => {
+      let bindings = target.dataset[this.name.toLowerCase() + "Bindattr"];
+      bindings.split(",").forEach((pair) => {
+        pair = pair.split(":");
+        if (pair[0] === key) {
+          if (pair[1] === "class") {
+            // TODO: needs to know what the initial class was to remove it - fix?
+            if (this._binds[key] !== value) {
+              target.classList.remove(this._binds[key]);
+            }
+            if (value) {
+              target.classList.add(value);
+            }
+          } else {
+            target.setAttribute(pair[1], value);
+          }
+        }
       });
-      // TODO: cache these before hand?
-      const targetAttrs = this.$node.querySelectorAll('[data-' + this.name.toLowerCase() + '-bindattr*="' + key + ':"]');
-      targetAttrs.forEach((target) => {
-          let bindings = target.dataset[this.name.toLowerCase() + 'Bindattr'];
-          bindings.split(',').forEach((pair) => {
-              pair = pair.split(':');
-              if (pair[0] === key) {
-                  if (pair[1] === 'class') {
-                      // TODO: needs to know what the initial class was to remove it - fix?
-                      if (this._binds[key] !== value) {
-                          target.classList.remove(this._binds[key]);
-                      }
-                      if (value) {
-                          target.classList.add(value);
-                      }
-                  } else {
-                      target.setAttribute(pair[1], value);
-                  }
-              }
-          });
-      });
+    });
   },
   init() {
+    this.debug("init()", this.options);
+
     // Get options from data attributes on node
-    const regex = new RegExp('^data-' + this.name + '-(.*)', 'i');
+    const regex = new RegExp("^data-" + this.name + "-(.*)", "i");
     for (let i = 0; i < this.$node.attributes.length; i++) {
       const attr = this.$node.attributes[i];
       const matches = regex.exec(attr.nodeName);
@@ -300,9 +312,7 @@ Behavior.prototype = Object.freeze({
       if (matches != null && matches.length >= 2) {
         if (this.options[matches[1]]) {
           console.warn(
-            `Ignoring ${
-              matches[1]
-            } option, as it already exists on the ${name} behavior. Please choose another name.`
+            `Ignoring ${matches[1]} option, as it already exists on the ${name} behavior. Please choose another name.`
           );
         }
         this.options[matches[1]] = attr.value;
@@ -310,18 +320,24 @@ Behavior.prototype = Object.freeze({
     }
 
     // Behavior-specific lifecycle
-    if (typeof this.lifecycle?.init === 'function') {
+    if (typeof this.lifecycle?.init === "function") {
       this.lifecycle.init.call(this);
     }
 
-    if (typeof this.lifecycle?.resized === 'function') {
+    if (typeof this.lifecycle?.resized === "function") {
       this.__resizedBind = this.__resized.bind(this);
-      window.addEventListener('resized', this.__resizedBind);
+      window.addEventListener("resized", this.__resizedBind);
     }
 
-    if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
+    if (
+      typeof this.lifecycle.mediaQueryUpdated === "function" ||
+      this.options.media
+    ) {
       this.__mediaQueryUpdatedBind = this.__mediaQueryUpdated.bind(this);
-      window.addEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
+      window.addEventListener(
+        "mediaQueryUpdated",
+        this.__mediaQueryUpdatedBind
+      );
     }
 
     if (this.options.media) {
@@ -340,19 +356,28 @@ Behavior.prototype = Object.freeze({
     }
 
     // Behavior-specific lifecycle
-    if (typeof this.lifecycle?.destroy === 'function') {
+    if (typeof this.lifecycle?.destroy === "function") {
       this.lifecycle.destroy.call(this);
     }
 
-    if (typeof this.lifecycle.resized === 'function') {
-       window.removeEventListener('resized', this.__resizedBind);
-     }
+    if (typeof this.lifecycle.resized === "function") {
+      window.removeEventListener("resized", this.__resizedBind);
+    }
 
-     if (typeof this.lifecycle.mediaQueryUpdated === 'function' || this.options.media) {
-       window.removeEventListener('mediaQueryUpdated', this.__mediaQueryUpdatedBind);
-     }
+    if (
+      typeof this.lifecycle.mediaQueryUpdated === "function" ||
+      this.options.media
+    ) {
+      window.removeEventListener(
+        "mediaQueryUpdated",
+        this.__mediaQueryUpdatedBind
+      );
+    }
 
-    if (this.lifecycle.intersectionIn != null || this.lifecycle.intersectionOut != null) {
+    if (
+      this.lifecycle.intersectionIn != null ||
+      this.lifecycle.intersectionOut != null
+    ) {
       this.__intersectionObserver.unobserve(this.$node);
       this.__intersectionObserver.disconnect();
     }
@@ -367,7 +392,7 @@ Behavior.prototype = Object.freeze({
    * @returns {HTMLElement|null}
    */
   getChild(selector, context, multi = false) {
-      // lets make a selection
+    // lets make a selection
     let selection;
     //
     if (this.__children != null && this.__children[selector] != null) {
@@ -378,7 +403,11 @@ Behavior.prototype = Object.freeze({
       // if a node list has been passed, use it
       selection = selector;
       multi = true;
-    } else if (selector instanceof Element || selector instanceof HTMLDocument || selector === window) {
+    } else if (
+      selector instanceof Element ||
+      selector instanceof HTMLDocument ||
+      selector === window
+    ) {
       // if a single node, the document or the window is passed, set to that
       selection = selector;
       multi = false;
@@ -389,43 +418,57 @@ Behavior.prototype = Object.freeze({
         context = this.$node;
       }
       // find
-      selection = context[multi ? 'querySelectorAll' : 'querySelector'](
-        '[data-' + this.name.toLowerCase() + '-' + selector.toLowerCase() + ']'
+      selection = context[multi ? "querySelectorAll" : "querySelector"](
+        "[data-" + this.name.toLowerCase() + "-" + selector.toLowerCase() + "]"
       );
     }
 
     if (multi && selection?.length > 0) {
       // apply on/off methods to the selected DOM node list
       selection.on = (type, fn, opt) => {
-        selection.forEach(el => {
+        selection.forEach((el) => {
           this.__on(el, type, fn, opt);
         });
       };
       selection.off = (type, fn) => {
-        selection.forEach(el => {
+        selection.forEach((el) => {
           this.__off(el, type, fn);
         });
       };
       // and apply to the individual nodes within
-      selection.forEach(el => {
-        el.on = el.on ? el.on : (type, fn, opt) => {
-          this.__on(el, type, fn, opt);
-        };
-        el.off = el.off ? el.off : (type, fn) => {
-          this.__off(el, type, fn);
-        };
+      selection.forEach((el) => {
+        el.on = el.on
+          ? el.on
+          : (type, fn, opt) => {
+              this.__on(el, type, fn, opt);
+            };
+        el.off = el.off
+          ? el.off
+          : (type, fn) => {
+              this.__off(el, type, fn);
+            };
       });
-    } else if(selection) {
+    } else if (selection) {
       // apply on/off methods to the singular selected node
-      selection.on = selection.on ? selection.on : (type, fn, opt) => {
-        this.__on(selection, type, fn, opt);
-      };
-      selection.off = selection.off ? selection.off : (type, fn) => {
-        this.__off(selection, type, fn);
-      };
+      selection.on = selection.on
+        ? selection.on
+        : (type, fn, opt) => {
+            this.__on(selection, type, fn, opt);
+          };
+      selection.off = selection.off
+        ? selection.off
+        : (type, fn) => {
+            this.__off(selection, type, fn);
+          };
     }
 
     // return to variable assignment
+
+    this.debug(`getChild${multi ? "ren" : ""}()`, {
+      selector,
+      context,
+      return: selection,
+    });
     return selection;
   },
   /**
@@ -438,28 +481,40 @@ Behavior.prototype = Object.freeze({
     return this.getChild(childName, context, true);
   },
   isEnabled() {
+    this.debug("isEnabled()", { return: this.__isEnabled });
+
     return this.__isEnabled;
   },
   enable() {
     this.__isEnabled = true;
-    if (typeof this.lifecycle.enabled === 'function') {
+    if (typeof this.lifecycle.enabled === "function") {
       this.lifecycle.enabled.call(this);
     }
+
+    this.debug("enable()");
   },
   disable() {
     this.__isEnabled = false;
-    if (typeof this.lifecycle.disabled === 'function') {
+    if (typeof this.lifecycle.disabled === "function") {
       this.lifecycle.disabled.call(this);
+    }
+    this.debug("disable()");
+  },
+  debug(...args) {
+    if (this.__debugEnabled === true) {
+      this.__debug(...args);
     }
   },
   addSubBehavior(SubBehavior, node = this.$node, config = {}) {
     const mb = exportObj;
-    if (typeof SubBehavior === 'string') {
+    if (typeof SubBehavior === "string") {
       mb.initBehavior(SubBehavior, node, config);
     } else {
       mb.add(SubBehavior);
       mb.initBehavior(SubBehavior.prototype.behaviorName, node, config);
     }
+
+    this.debug("addSubBehavior()", { SubBehavior, node, config });
   },
   /**
    * Check if breakpoint passed in param is the current one
@@ -467,23 +522,31 @@ Behavior.prototype = Object.freeze({
    * @returns {boolean}
    */
   isBreakpoint(bp) {
+    this.debug("isBreakpoint()", {
+      bp,
+      breakpoints: this.__breakpoints,
+      return: isBreakpoint(bp, this.__breakpoints),
+    });
+
     return isBreakpoint(bp, this.__breakpoints);
   },
   __on(el, type, fn, opt) {
-    if (typeof opt === 'boolean' && opt === true) {
+    if (typeof opt === "boolean" && opt === true) {
       opt = {
-        passive: true
+        passive: true,
       };
     }
     const options = {
       signal: this.__abortController.signal,
-      ...opt
+      ...opt,
     };
     if (!el.attachedListeners) {
       el.attachedListeners = {};
     }
     // check if el already has this listener
-    let found = Object.values(el.attachedListeners).find(listener => listener.type === type && listener.fn === fn);
+    let found = Object.values(el.attachedListeners).find(
+      (listener) => listener.type === type && listener.fn === fn
+    );
     if (!found) {
       el.attachedListeners[Object.values(el.attachedListeners).length] = {
         type: type,
@@ -491,10 +554,12 @@ Behavior.prototype = Object.freeze({
       };
       el.addEventListener(type, fn, options);
     }
+
+    this.debug("on()", { el, type, fn, options });
   },
   __off(el, type, fn) {
     if (el.attachedListeners) {
-      Object.keys(el.attachedListeners).forEach(key => {
+      Object.keys(el.attachedListeners).forEach((key) => {
         const thisListener = el.attachedListeners[key];
         if (
           (!type && !fn) || // off()
@@ -508,6 +573,8 @@ Behavior.prototype = Object.freeze({
     } else {
       el.removeEventListener(type, fn);
     }
+
+    this.debug("off()", { el, type, fn });
   },
   __toggleEnabled() {
     const isValidMQ = isBreakpoint(this.options.media, this.__breakpoints);
@@ -516,34 +583,59 @@ Behavior.prototype = Object.freeze({
     } else if (!isValidMQ && this.__isEnabled) {
       this.disable();
     }
+
+    this.debug("toggleEnabled()", { isValidMQ, isEnabled: this.__isEnabled });
   },
   __mediaQueryUpdated(e) {
-    if (typeof this.lifecycle?.mediaQueryUpdated === 'function') {
+    if (typeof this.lifecycle?.mediaQueryUpdated === "function") {
       this.lifecycle.mediaQueryUpdated.call(this, e);
+      this.debug("mediaQueryUpdated()", {
+        from: e.detail.prevBreakpoint,
+        to: e.detail.breakpoint,
+      });
     }
     if (this.options.media) {
       this.__toggleEnabled();
     }
   },
   __resized(e) {
-    if (typeof this.lifecycle?.resized === 'function') {
+    if (typeof this.lifecycle?.resized === "function") {
       this.lifecycle.resized.call(this, e);
+
+      this.debug("resized()", e.detail);
+    }
+  },
+  __debug(...args) {
+    if (typeof console !== "undefined" && typeof console.log === "function") {
+      // Prefix with behavior name for easier tracing
+      console.log(`%c[${this.name}]`, "color: blue", ...args);
     }
   },
   __intersections() {
-    if (this.lifecycle.intersectionIn != null || this.lifecycle.intersectionOut != null) {
-      this.__intersectionObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
+    if (
+      this.lifecycle.intersectionIn != null ||
+      this.lifecycle.intersectionOut != null
+    ) {
+      this.__intersectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
           if (entry.target === this.$node) {
             if (entry.isIntersecting) {
-              if (!this.__isIntersecting && typeof this.lifecycle.intersectionIn === 'function') {
+              if (
+                !this.__isIntersecting &&
+                typeof this.lifecycle.intersectionIn === "function"
+              ) {
                 this.__isIntersecting = true;
                 this.lifecycle.intersectionIn.call(this);
+                this.debug("intersectionIn()");
               }
             } else {
-              if (this.__isIntersecting && typeof this.lifecycle.intersectionOut === 'function') {
+              if (
+                this.__isIntersecting &&
+                typeof this.lifecycle.intersectionOut === "function"
+              ) {
                 this.__isIntersecting = false;
                 this.lifecycle.intersectionOut.call(this);
+                this.debug("intersectionOut()");
               }
             }
           }
@@ -551,7 +643,7 @@ Behavior.prototype = Object.freeze({
       }, this.options.intersectionOptions);
       this.__intersectionObserver.observe(this.$node);
     }
-  }
+  },
 });
 
 /**
@@ -559,14 +651,20 @@ Behavior.prototype = Object.freeze({
  * @param {string} name - Name of the behavior used for declaration: data-behavior="name"
  * @param {object} methods - define methods of the behavior
  * @param {object} lifecycle - Register behavior lifecycle
+ * @param {boolean} debug - Enable debug mode
  * @returns {Behavior}
  */
-const createBehavior = (name, methods = {}, lifecycle = {}) => {
+const createBehavior = (
+  name,
+  methods = {},
+  lifecycle = {},
+  debugEnabled = false
+) => {
   /**
    *
    * @param args
    */
-  const fn = function(...args) {
+  const fn = function (...args) {
     Behavior.apply(this, args);
   };
 
@@ -591,11 +689,14 @@ const createBehavior = (name, methods = {}, lifecycle = {}) => {
     customMethodNames: {
       value: customMethodNames,
     },
+    debugEnabled: {
+      value: debugEnabled,
+    },
   };
 
   // Expose the definition properties as 'this[methodName]'
   const methodsKeys = Object.keys(methods);
-  methodsKeys.forEach(key => {
+  methodsKeys.forEach((key) => {
     customMethodNames.push(key);
   });
 
@@ -605,13 +706,14 @@ const createBehavior = (name, methods = {}, lifecycle = {}) => {
 };
 
 let options = {
-  dataAttr: 'behavior',
-  lazyAttr: 'behavior-lazy',
+  dataAttr: "behavior",
+  lazyAttr: "behavior-lazy",
   intersectionOptions: {
-    rootMargin: '20%',
+    rootMargin: "20%",
   },
-  breakpoints: ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'],
+  breakpoints: ["xs", "sm", "md", "lg", "xl", "xxl"],
   dynamicBehaviors: {},
+  debug: false,
 };
 
 let loadedBehaviorNames = [];
@@ -636,11 +738,11 @@ const intersecting = new Map();
  * @returns {string[]}
  */
 function getBehaviorNames(bNode, attr) {
-  attr = attr.toLowerCase().replace(/-([a-zA-Z0-9])/ig, (match, p1) => {
+  attr = attr.toLowerCase().replace(/-([a-zA-Z0-9])/gi, (match, p1) => {
     return p1.toUpperCase();
   });
   if (bNode.dataset && bNode.dataset[attr]) {
-    return bNode.dataset[attr].split(' ').filter(bName => bName);
+    return bNode.dataset[attr].split(" ").filter((bName) => bName);
   } else {
     return [];
   }
@@ -706,7 +808,7 @@ function destroyBehavior(bName, bNode) {
 function destroyBehaviors(rNode) {
   const bNodes = Array.from(activeBehaviors.keys());
   bNodes.push(rNode);
-  bNodes.forEach(bNode => {
+  bNodes.forEach((bNode) => {
     // is the active node the removed node
     // or does the removed node contain the active node?
     if (rNode === bNode || rNode.contains(bNode)) {
@@ -714,7 +816,7 @@ function destroyBehaviors(rNode) {
       const bNodeActiveBehaviors = activeBehaviors.get(bNode);
       // if some, destroy
       if (bNodeActiveBehaviors) {
-        Object.keys(bNodeActiveBehaviors).forEach(bName => {
+        Object.keys(bNodeActiveBehaviors).forEach((bName) => {
           destroyBehavior(bName, bNode);
           // stop intersection observer from watching node
           io.unobserve(bNode);
@@ -752,7 +854,7 @@ function importBehavior(bName, bNode) {
   // import
   // process.env variables set in webpack/vite config
   //
-  if (process.env.BUILD === 'vite') {
+  if (process.env.BUILD === "vite") {
     try {
       /**
        * For BEHAVIORS_COMPONENT_PATHS usage,
@@ -764,14 +866,18 @@ function importBehavior(bName, bNode) {
        * and does not allow variables to be passed to it
        * see: https://vite.dev/guide/features#glob-import
        */
-      options.dynamicBehaviors[process.env.BEHAVIORS_COMPONENT_PATHS[bName]]().then(module => {
-        behaviorImported(bName, bNode, module);
-      }).catch(err => {
-        console.warn(`Behavior '${bName}' load failed - possible error with the behavior or a malformed module`);
-        // fail, clean up
-        importFailed(bName);
-      });
-    } catch(errV1) {
+      options.dynamicBehaviors[process.env.BEHAVIORS_COMPONENT_PATHS[bName]]()
+        .then((module) => {
+          behaviorImported(bName, bNode, module);
+        })
+        .catch((err) => {
+          console.warn(
+            `Behavior '${bName}' load failed - possible error with the behavior or a malformed module`
+          );
+          // fail, clean up
+          importFailed(bName);
+        });
+    } catch (errV1) {
       try {
         /**
          * Vite bundler requires a known start point for imports
@@ -779,15 +885,23 @@ function importBehavior(bName, bNode) {
          * Webkit uses aliases differently and continues on to the
          * imports below (but may throw build warnings attempting this)
          */
-        options.dynamicBehaviors[`${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`]().then(module => {
-          behaviorImported(bName, bNode, module);
-        }).catch(err => {
-          console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
-          // fail, clean up
-          importFailed(bName);
-        });
-      } catch(errV2) {
-        console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
+        options.dynamicBehaviors[
+          `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+        ]()
+          .then((module) => {
+            behaviorImported(bName, bNode, module);
+          })
+          .catch((err) => {
+            console.warn(
+              `Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`
+            );
+            // fail, clean up
+            importFailed(bName);
+          });
+      } catch (errV2) {
+        console.warn(
+          `Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Vite has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Vite config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`
+        );
         // fail, clean up
         importFailed(bName);
       }
@@ -811,15 +925,19 @@ function importBehavior(bName, bNode) {
        */
       import(
         /* @vite-ignore */
-        `${process.env.BEHAVIORS_PATH}/${(process.env.BEHAVIORS_COMPONENT_PATHS[bName]||'').replace(/^\/|\/$/ig,'')}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
-      ).then(module => {
-        behaviorImported(bName, bNode, module);
-      }).catch(err => {
-        console.warn(`No loaded behavior: ${bName}`);
-        // fail, clean up
-        importFailed(bName);
-      });
-    } catch(errW1) {
+        `${process.env.BEHAVIORS_PATH}/${(
+          process.env.BEHAVIORS_COMPONENT_PATHS[bName] || ""
+        ).replace(/^\/|\/$/gi, "")}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
+      )
+        .then((module) => {
+          behaviorImported(bName, bNode, module);
+        })
+        .catch((err) => {
+          console.warn(`No loaded behavior: ${bName}`);
+          // fail, clean up
+          importFailed(bName);
+        });
+    } catch (errW1) {
       try {
         import(
           /**
@@ -829,15 +947,21 @@ function importBehavior(bName, bNode) {
            */
           /* @vite-ignore */
           `${process.env.BEHAVIORS_PATH}/${bName}.${process.env.BEHAVIORS_EXTENSION}`
-        ).then(module => {
-          behaviorImported(bName, bNode, module);
-        }).catch(err => {
-          console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
-          // fail, clean up
-          importFailed(bName);
-        });
-      } catch(errW2) {
-        console.warn(`Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`);
+        )
+          .then((module) => {
+            behaviorImported(bName, bNode, module);
+          })
+          .catch((err) => {
+            console.warn(
+              `Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`
+            );
+            // fail, clean up
+            importFailed(bName);
+          });
+      } catch (errW2) {
+        console.warn(
+          `Behavior '${bName}' load failed. \nIt maybe the behavior doesn't exist, is malformed or errored. Check for typos and check Webpack has generated your file. \nIf you are using dynamically imported behaviors, you may also want to check your Webpack config. See https://github.com/area17/a17-behaviors/wiki/Setup#webpack-config`
+        );
         // fail, clean up
         importFailed(bName);
       }
@@ -857,13 +981,13 @@ function importBehavior(bName, bNode) {
  */
 function behaviorImported(bName, bNode, module) {
   // does what we loaded look right?
-  if (module.default && typeof module.default === 'function') {
+  if (module.default && typeof module.default === "function") {
     // import complete, go go go
     loadedBehaviors[bName] = module.default;
     initBehavior(bName, bNode);
     // check for other instances of this behavior that where awaiting load
     if (behaviorsAwaitingImport.get(bName)) {
-      behaviorsAwaitingImport.get(bName).forEach(node => {
+      behaviorsAwaitingImport.get(bName).forEach((node) => {
         initBehavior(bName, node);
       });
       behaviorsAwaitingImport.delete(bName);
@@ -884,19 +1008,22 @@ function behaviorImported(bName, bNode, module) {
  */
 function createBehaviors(node) {
   // Ignore text or comment nodes
-  if (!('querySelectorAll' in node)) {
+  if (!("querySelectorAll" in node)) {
     return;
   }
 
   // first check for "critical" behavior nodes
   // these will be run immediately on discovery
-  const behaviorNodes = [node, ...node.querySelectorAll(`[data-${options.dataAttr}]`)];
-  behaviorNodes.forEach(bNode => {
+  const behaviorNodes = [
+    node,
+    ...node.querySelectorAll(`[data-${options.dataAttr}]`),
+  ];
+  behaviorNodes.forEach((bNode) => {
     // an element can have multiple behaviors
     const bNames = getBehaviorNames(bNode, options.dataAttr);
     // loop them
     if (bNames) {
-      bNames.forEach(bName => {
+      bNames.forEach((bName) => {
         initBehavior(bName, bNode);
       });
     }
@@ -905,12 +1032,15 @@ function createBehaviors(node) {
   // now check for "lazy" behaviors
   // these are triggered via an intersection observer
   // these have optional breakpoints at which to trigger
-  const lazyBehaviorNodes = [node, ...node.querySelectorAll(`[data-${options.lazyAttr}]`)];
-  lazyBehaviorNodes.forEach(bNode => {
+  const lazyBehaviorNodes = [
+    node,
+    ...node.querySelectorAll(`[data-${options.lazyAttr}]`),
+  ];
+  lazyBehaviorNodes.forEach((bNode) => {
     // look for lazy behavior names
     const bNames = getBehaviorNames(bNode, options.lazyAttr);
     const bMap = new Map();
-    bNames.forEach(bName => {
+    bNames.forEach((bName) => {
       // check for a lazy behavior breakpoint trigger
       const behaviorMedia = bNode.dataset[`${bName.toLowerCase()}Lazymedia`];
       // store
@@ -936,13 +1066,13 @@ function observeBehaviors() {
   // flag to stop multiple MutationObserver
   observingBehaviors = true;
   // set up MutationObserver
-  const mo = new MutationObserver(mutations => {
+  const mo = new MutationObserver((mutations) => {
     // report on what changed
-    mutations.forEach(mutation => {
-      mutation.removedNodes.forEach(node => {
+    mutations.forEach((mutation) => {
+      mutation.removedNodes.forEach((node) => {
         destroyBehaviors(node);
       });
-      mutation.addedNodes.forEach(node => {
+      mutation.addedNodes.forEach((node) => {
         createBehaviors(node);
       });
     });
@@ -968,9 +1098,12 @@ function observeBehaviors() {
  * @param {HTMLElement[]} bNodes - elements to check for lazy behaviors
  */
 function loopLazyBehaviorNodes(bNodes) {
-  bNodes.forEach(bNode => {
+  bNodes.forEach((bNode) => {
     // first, check if this node is being intersected
-    if (intersecting.get(bNode) !== undefined && intersecting.get(bNode) === false) {
+    if (
+      intersecting.get(bNode) !== undefined &&
+      intersecting.get(bNode) === false
+    ) {
       return;
     }
     // now check to see if we have any lazy behavior names
@@ -1013,7 +1146,7 @@ function loopLazyBehaviorNodes(bNodes) {
  * @param {IntersectionObserverEntry[]} entries
  */
 function intersection(entries) {
-  entries.forEach(entry => {
+  entries.forEach((entry) => {
     if (entry.isIntersecting) {
       intersecting.set(entry.target, true);
       loopLazyBehaviorNodes([entry.target]);
@@ -1029,14 +1162,12 @@ function intersection(entries) {
  * If a resize has happened with enough size that a
  * breakpoint has changed, checks to see if any lazy
  * behaviors need to be initialised or not
-*/
+ */
 function mediaQueryUpdated() {
   loopLazyBehaviorNodes(Array.from(ioEntries.keys()));
 }
 
-
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Public methods */
-
 
 /**
  * initBehavior
@@ -1062,8 +1193,10 @@ function initBehavior(bName, bNode, config = {}) {
   // merge breakpoints into config
   config = {
     breakpoints: options.breakpoints,
-    ...config
+    debugEnabled: options.debug,
+    ...config,
   };
+
   // now check that this behavior isn't already
   // running on this node
   const nodeBehaviors = activeBehaviors.get(bNode) || {};
@@ -1076,8 +1209,8 @@ function initBehavior(bName, bNode, config = {}) {
     try {
       instance.init();
       return instance;
-    } catch(err) {
-      console.log(`Error in behavior '${ bName }' on:`, bNode);
+    } catch (err) {
+      console.log(`Error in behavior '${bName}' on:`, bNode);
       console.log(err);
     }
   }
@@ -1098,23 +1231,25 @@ function initBehavior(bName, bNode, config = {}) {
  * @param {function|string} behaviors
  */
 function addBehaviors(behaviors) {
-    // if singular behavior added, sort into module like structure
-    if (typeof behaviors === 'function' && behaviors.prototype.behaviorName) {
-      behaviors = { [behaviors.prototype.behaviorName]: behaviors };
-    }
-    // if an uncompiled behavior object is passed, create it
-    if (typeof behaviors === 'string' && arguments.length > 1) {
-      behaviors = { [behaviors]: createBehavior(...arguments) };
-    }
-    // process
-    const unique = Object.keys(behaviors).filter((o) => loadedBehaviorNames.indexOf(o) === -1);
-    if (unique.length) {
-      // we have new unique behaviors, store them
-      loadedBehaviorNames = loadedBehaviorNames.concat(unique);
-      unique.forEach(bName => {
-        loadedBehaviors[bName] = behaviors[bName];
-      });
-    }
+  // if singular behavior added, sort into module like structure
+  if (typeof behaviors === "function" && behaviors.prototype.behaviorName) {
+    behaviors = { [behaviors.prototype.behaviorName]: behaviors };
+  }
+  // if an uncompiled behavior object is passed, create it
+  if (typeof behaviors === "string" && arguments.length > 1) {
+    behaviors = { [behaviors]: createBehavior(...arguments) };
+  }
+  // process
+  const unique = Object.keys(behaviors).filter(
+    (o) => loadedBehaviorNames.indexOf(o) === -1
+  );
+  if (unique.length) {
+    // we have new unique behaviors, store them
+    loadedBehaviorNames = loadedBehaviorNames.concat(unique);
+    unique.forEach((bName) => {
+      loadedBehaviors[bName] = behaviors[bName];
+    });
+  }
 }
 
 /**
@@ -1175,7 +1310,7 @@ function behaviorProp(bName, bNode, prop, value) {
   if (!nodeBehaviors || !nodeBehaviors[bName]) {
     console.warn(`No behavior '${bName}' instance on:`, bNode);
   } else if (activeBehaviors.get(bNode)[bName][prop]) {
-    if (value && typeof value === 'function') {
+    if (value && typeof value === "function") {
       return activeBehaviors.get(bNode)[bName][prop];
     } else if (value) {
       activeBehaviors.get(bNode)[bName][prop] = value;
@@ -1183,7 +1318,10 @@ function behaviorProp(bName, bNode, prop, value) {
       return activeBehaviors.get(bNode)[bName][prop];
     }
   } else {
-    console.warn(`No property '${prop}' in behavior '${bName}' instance on:`, bNode);
+    console.warn(
+      `No property '${prop}' in behavior '${bName}' instance on:`,
+      bNode
+    );
   }
 }
 
@@ -1205,7 +1343,8 @@ function behaviorProp(bName, bNode, prop, value) {
  */
 function init(loadedBehaviorsModule, opts = {}) {
   options = {
-    ...options, ...opts
+    ...options,
+    ...opts,
   };
 
   // on resize, check
@@ -1228,7 +1367,7 @@ function init(loadedBehaviorsModule, opts = {}) {
   }
 
   // watch for break point changes
-  window.addEventListener('mediaQueryUpdated', mediaQueryUpdated);
+  window.addEventListener("mediaQueryUpdated", mediaQueryUpdated);
 }
 
 /**
@@ -1260,15 +1399,15 @@ let exportObj = {
   initBehavior: initBehavior,
   get currentBreakpoint() {
     return getCurrentMediaQuery();
-  }
+  },
 };
 
 try {
-  if (process.env.MODE === 'development') {
-    Object.defineProperty(exportObj, 'loaded', {
+  if (process.env.MODE === "development") {
+    Object.defineProperty(exportObj, "loaded", {
       get: () => {
         return loadedBehaviorNames;
-      }
+      },
     });
     exportObj.activeBehaviors = activeBehaviors;
     exportObj.active = activeBehaviors;
@@ -1278,7 +1417,7 @@ try {
     exportObj.setProp = behaviorProp;
     exportObj.callMethod = behaviorProp;
   }
-} catch(err) {
+} catch (err) {
   // no process.env.mode
 }
 
