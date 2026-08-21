@@ -128,7 +128,7 @@ Behavior.prototype = Object.freeze({
           console.warn(
             `Ignoring ${
               matches[1]
-            } option, as it already exists on the ${name} behavior. Please choose another name.`
+            } option, as it already exists on the ${this.name} behavior. Please choose another name.`
           );
         }
         this.options[matches[1]] = attr.value;
