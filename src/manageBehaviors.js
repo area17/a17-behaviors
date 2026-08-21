@@ -14,6 +14,7 @@ let options = {
 };
 
 let loadedBehaviorNames = [];
+let initialized = false;
 let observingBehaviors = false;
 const loadedBehaviors = {};
 const activeBehaviors = new Map();
@@ -613,27 +614,22 @@ function init(loadedBehaviorsModule, opts = {}) {
     ...options, ...opts
   }
 
-  // on resize, check
-  resized();
-
-  // set up intersection observer
-  io = new IntersectionObserver(intersection, options.intersectionOptions);
+  if (!initialized) {
+    // global observers and listeners are one-time setup
+    resized();
+    io = new IntersectionObserver(intersection, options.intersectionOptions);
+    observeBehaviors();
+    window.addEventListener('mediaQueryUpdated', mediaQueryUpdated);
+    initialized = true;
+  }
 
   // if fn run with supplied behaviors, lets add them and begin
   if (loadedBehaviorsModule) {
     addBehaviors(loadedBehaviorsModule);
   }
 
-  // try and apply behaviors to any DOM node that needs them
+  // always rescan so repeated init calls can pick up new behavior nodes
   createBehaviors(document);
-
-  // start the mutation observer looking for DOM changes
-  if (!observingBehaviors) {
-    observeBehaviors();
-  }
-
-  // watch for break point changes
-  window.addEventListener('mediaQueryUpdated', mediaQueryUpdated);
 }
 
 /**
