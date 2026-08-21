@@ -1071,14 +1071,20 @@ function initBehavior(bName, bNode, config = {}) {
   const nodeBehaviors = activeBehaviors.get(bNode) || {};
   if (Object.keys(nodeBehaviors).length === 0 || !nodeBehaviors[bName]) {
     const instance = new loadedBehaviors[bName](bNode, config);
-    // update internal store of whats running
-    nodeBehaviors[bName] = instance;
-    activeBehaviors.set(bNode, nodeBehaviors);
     // init method in the behavior
     try {
       instance.init();
+      // only mark the behavior as active once init has completed successfully
+      nodeBehaviors[bName] = instance;
+      activeBehaviors.set(bNode, nodeBehaviors);
       return instance;
     } catch(err) {
+      delete nodeBehaviors[bName];
+      if (Object.keys(nodeBehaviors).length === 0) {
+        activeBehaviors.delete(bNode);
+      } else {
+        activeBehaviors.set(bNode, nodeBehaviors);
+      }
       console.log(`Error in behavior '${ bName }' on:`, bNode);
       console.log(err);
     }
