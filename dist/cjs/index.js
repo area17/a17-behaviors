@@ -1180,16 +1180,16 @@ function behaviorProp(bName, bNode, prop, value) {
   const nodeBehaviors = activeBehaviors.get(bNode);
   if (!nodeBehaviors || !nodeBehaviors[bName]) {
     console.warn(`No behavior '${bName}' instance on:`, bNode);
-  } else if (activeBehaviors.get(bNode)[bName][prop]) {
-    if (value && typeof value === 'function') {
-      return activeBehaviors.get(bNode)[bName][prop];
-    } else if (value) {
-      activeBehaviors.get(bNode)[bName][prop] = value;
-    } else {
-      return activeBehaviors.get(bNode)[bName][prop];
-    }
   } else {
-    console.warn(`No property '${prop}' in behavior '${bName}' instance on:`, bNode);
+    const behavior = activeBehaviors.get(bNode)[bName];
+
+    if (!(prop in behavior)) {
+      console.warn(`No property '${prop}' in behavior '${bName}' instance on:`, bNode);
+    } else if (arguments.length >= 4 && typeof value !== 'function') {
+      behavior[prop] = value;
+    } else {
+      return behavior[prop];
+    }
   }
 }
 
