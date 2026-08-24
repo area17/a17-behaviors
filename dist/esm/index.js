@@ -302,7 +302,7 @@ Behavior.prototype = Object.freeze({
           console.warn(
             `Ignoring ${
               matches[1]
-            } option, as it already exists on the ${name} behavior. Please choose another name.`
+            } option, as it already exists on the ${this.name} behavior. Please choose another name.`
           );
         }
         this.options[matches[1]] = attr.value;
@@ -615,7 +615,7 @@ let options = {
 };
 
 let loadedBehaviorNames = [];
-let observingBehaviors = false;
+let initialized = false;
 const loadedBehaviors = {};
 const activeBehaviors = new Map();
 const behaviorsAwaitingImport = new Map();
@@ -933,8 +933,6 @@ function createBehaviors(node) {
  * the call back runs, informing us of what changed
  */
 function observeBehaviors() {
-  // flag to stop multiple MutationObserver
-  observingBehaviors = true;
   // set up MutationObserver
   const mo = new MutationObserver(mutations => {
     // report on what changed
@@ -1069,14 +1067,20 @@ function initBehavior(bName, bNode, config = {}) {
   const nodeBehaviors = activeBehaviors.get(bNode) || {};
   if (Object.keys(nodeBehaviors).length === 0 || !nodeBehaviors[bName]) {
     const instance = new loadedBehaviors[bName](bNode, config);
-    // update internal store of whats running
-    nodeBehaviors[bName] = instance;
-    activeBehaviors.set(bNode, nodeBehaviors);
     // init method in the behavior
     try {
       instance.init();
+      // only mark the behavior as active once init has completed successfully
+      nodeBehaviors[bName] = instance;
+      activeBehaviors.set(bNode, nodeBehaviors);
       return instance;
     } catch(err) {
+      delete nodeBehaviors[bName];
+      if (Object.keys(nodeBehaviors).length === 0) {
+        activeBehaviors.delete(bNode);
+      } else {
+        activeBehaviors.set(bNode, nodeBehaviors);
+      }
       console.log(`Error in behavior '${ bName }' on:`, bNode);
       console.log(err);
     }
@@ -1174,16 +1178,16 @@ function behaviorProp(bName, bNode, prop, value) {
   const nodeBehaviors = activeBehaviors.get(bNode);
   if (!nodeBehaviors || !nodeBehaviors[bName]) {
     console.warn(`No behavior '${bName}' instance on:`, bNode);
-  } else if (activeBehaviors.get(bNode)[bName][prop]) {
-    if (value && typeof value === 'function') {
-      return activeBehaviors.get(bNode)[bName][prop];
-    } else if (value) {
-      activeBehaviors.get(bNode)[bName][prop] = value;
-    } else {
-      return activeBehaviors.get(bNode)[bName][prop];
-    }
   } else {
-    console.warn(`No property '${prop}' in behavior '${bName}' instance on:`, bNode);
+    const behavior = activeBehaviors.get(bNode)[bName];
+
+    if (!(prop in behavior)) {
+      console.warn(`No property '${prop}' in behavior '${bName}' instance on:`, bNode);
+    } else if (arguments.length >= 4 && typeof value !== 'function') {
+      behavior[prop] = value;
+    } else {
+      return behavior[prop];
+    }
   }
 }
 
@@ -1208,27 +1212,22 @@ function init(loadedBehaviorsModule, opts = {}) {
     ...options, ...opts
   };
 
-  // on resize, check
-  resized();
-
-  // set up intersection observer
-  io = new IntersectionObserver(intersection, options.intersectionOptions);
+  if (!initialized) {
+    // global observers and listeners are one-time setup
+    resized();
+    io = new IntersectionObserver(intersection, options.intersectionOptions);
+    observeBehaviors();
+    window.addEventListener('mediaQueryUpdated', mediaQueryUpdated);
+    initialized = true;
+  }
 
   // if fn run with supplied behaviors, lets add them and begin
   if (loadedBehaviorsModule) {
     addBehaviors(loadedBehaviorsModule);
   }
 
-  // try and apply behaviors to any DOM node that needs them
+  // always rescan so repeated init calls can pick up new behavior nodes
   createBehaviors(document);
-
-  // start the mutation observer looking for DOM changes
-  if (!observingBehaviors) {
-    observeBehaviors();
-  }
-
-  // watch for break point changes
-  window.addEventListener('mediaQueryUpdated', mediaQueryUpdated);
 }
 
 /**
@@ -1252,11 +1251,24 @@ function addAndInit() {
   }
 }
 
+/**
+ * scan
+ *
+ * Scans a node or the whole document for behavior declarations and
+ * initializes any missing behavior instances.
+ *
+ * @param {ParentNode|HTMLElement|Document} [node=document]
+ */
+function scan(node = document) {
+  createBehaviors(node);
+}
+
 // expose public methods, essentially returning
 
 let exportObj = {
   init: init,
   add: addAndInit,
+  scan: scan,
   initBehavior: initBehavior,
   get currentBreakpoint() {
     return getCurrentMediaQuery();
@@ -1270,7 +1282,6 @@ try {
         return loadedBehaviorNames;
       }
     });
-    exportObj.activeBehaviors = activeBehaviors;
     exportObj.active = activeBehaviors;
     exportObj.getBehaviors = nodeBehaviors;
     exportObj.getProps = behaviorProperties;
