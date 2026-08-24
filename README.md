@@ -75,6 +75,13 @@ In this example, clicking the button will trigger an alert saying "Hello world!"
 
 `manageBehaviors` uses `MutationObserver`, `IntersectionObserver`, and a debounced `resize` listener to track DOM changes. It detects when elements are added, removed, or enter/exit the viewport and triggers lifecycle methods on attached behaviors.
 
+If you need to process behavior declarations on demand, you can manually scan the whole document or a subtree:
+
+```JavaScript
+manageBehaviors.scan();
+manageBehaviors.scan(node);
+```
+
 `createBehavior` defines a behavior, giving you a logical structure with clearly scoped methods and lifecycle hooks tied to specific DOM nodes.
 
 `extendBehavior` lets you create variations of an existing behavior by overriding or adding properties and methods.
@@ -115,4 +122,3 @@ Remember, bug reports are created in the hope that others with the same problem 
 Our A17 Behaviors follows [Semantic Versioning](https://semver.org/). Major releases are released only when breaking changes are necessary, while minor and patch releases may be released as often as every week. Minor and patch releases should never contain breaking changes.
 
 When referencing A17 Behaviors from your application, you should always use a version constraint such as `^1.0`, since major releases of A17 Behaviors will include breaking changes.
-

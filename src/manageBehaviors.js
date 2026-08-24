@@ -653,11 +653,24 @@ function addAndInit() {
   }
 }
 
+/**
+ * scan
+ *
+ * Scans a node or the whole document for behavior declarations and
+ * initializes any missing behavior instances.
+ *
+ * @param {ParentNode|HTMLElement|Document} [node=document]
+ */
+function scan(node = document) {
+  createBehaviors(node);
+}
+
 // expose public methods, essentially returning
 
 let exportObj = {
   init: init,
   add: addAndInit,
+  scan: scan,
   initBehavior: initBehavior,
   get currentBreakpoint() {
     return getCurrentMediaQuery();
