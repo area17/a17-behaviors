@@ -1284,7 +1284,6 @@ try {
         return loadedBehaviorNames;
       }
     });
-    exportObj.activeBehaviors = activeBehaviors;
     exportObj.active = activeBehaviors;
     exportObj.getBehaviors = nodeBehaviors;
     exportObj.getProps = behaviorProperties;
